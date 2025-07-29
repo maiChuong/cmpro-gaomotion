@@ -6,6 +6,13 @@ npm install -D @tailwindcss/typography
 npm install zustand
 npm install @radix-ui/react-label class-variance-authority
 
+npm install @mediapipe/drawing_utils
+npm install three @react-three/fiber @react-three/drei
+npm install three
+npm install --save-dev @types/three
+
+
+
 npm run build
 npm run dev
 
