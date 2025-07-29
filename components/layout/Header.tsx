@@ -1,378 +1,78 @@
-import {
-  Box,
-  Flex,
-  Text,
-  IconButton,
-  Stack,
-  Collapse,
-  Icon,
-  Link,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  useColorModeValue,
-  useDisclosure,
-  Spacer,
-} from '@chakra-ui/react';
-import NextLink from 'next/link';
-import { AiOutlineClose } from 'react-icons/ai';
-import { FiChevronDown, FiChevronRight } from 'react-icons/fi';
-import { GiHamburgerMenu } from 'react-icons/gi';
+'use client';
 
-import ThemeToggle from './ThemeToggle';
-import LanguageSwitcher from './LanguageSwitcher';
-import { useTranslations } from 'next-intl';
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { cn } from '@/lib/utils';
+import { MenuIcon } from '@/components/ui/MenuIcon';
 
-interface NavItem {
-  label: string;
-  children?: Array<NavItem>;
-  href?: string;
-}
-const NAV_ITEMS: Array<NavItem> = [
-  {
-    label: 'home',
-    href: '#hero',
-  },
-  {
-    label: 'features',
-    href: '#features',
-  },
-  {
-    label: 'techStack',
-    href: '#stack',
-  },
+const navItems = [
+  { href: '/', label: 'Home' },
+  { href: '/capture', label: 'Live Capture' },
+  { href: '/upload', label: 'Upload' },
+  { href: '/settings', label: 'Settings' },
 ];
 
-const DesktopSubNav = ({ label, href }: NavItem) => {
-  return (
-    <Link
-      as={NextLink}
-      href={href}
-      role="group"
-      display="block"
-      p={2}
-      rounded="md"
-      _hover={{ bg: useColorModeValue('pink.50', 'gray.900') }}
-    >
-      <Stack direction="row" align="center">
-        <Box>
-          <Text
-            transition="all .3s ease"
-            _groupHover={{ color: 'pink.400' }}
-            fontWeight={500}
-          >
-            {label}
-          </Text>
-        </Box>
-        <Flex
-          transition="all .3s ease"
-          transform="translateX(-10px)"
-          opacity={0}
-          _groupHover={{ opacity: '100%', transform: 'translateX(0)' }}
-          justify="flex-end"
-          align="center"
-          flex={1}
-        >
-          <Icon color="pink.400" w={5} h={5} as={FiChevronRight} />
-        </Flex>
-      </Stack>
-    </Link>
-  );
-};
-
-const DesktopNav = () => {
-  const linkColor = useColorModeValue('gray.600', 'gray.200');
-  const linkHoverColor = useColorModeValue('gray.800', 'white');
-  const popoverContentBgColor = useColorModeValue('white', 'gray.800');
-  const t = useTranslations('Header.navigation');
+export function Header() {
+  const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <Stack direction="row" spacing={4}>
-      {NAV_ITEMS.map((navItem) => (
-        <Box key={navItem.label}>
-          <Popover trigger="hover" placement="bottom-start">
-            <PopoverTrigger>
+    <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/80">
+      <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
+        <div className="mr-4 flex">
+          <Link href="/" className="mr-6 flex items-center space-x-2">
+            <span className="font-bold">GaoMotion</span>
+          </Link>
+          <nav className="hidden items-center gap-6 text-sm md:flex">
+            {navItems.map((item) => (
               <Link
-                as={NextLink}
-                p={2}
-                href={navItem.href ?? '#'}
-                fontSize="sm"
-                fontWeight={500}
-                color={linkColor}
-                _hover={{
-                  textDecoration: 'none',
-                  color: linkHoverColor,
-                }}
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'transition-colors hover:text-gray-900 dark:hover:text-gray-50',
+                  pathname === item.href
+                    ? 'text-gray-900 dark:text-gray-50'
+                    : 'text-gray-600 dark:text-gray-400'
+                )}
               >
-                {t(navItem.label)}
-              </Link>
-            </PopoverTrigger>
-
-            {navItem.children && (
-              <PopoverContent
-                border={0}
-                boxShadow="xl"
-                bg={popoverContentBgColor}
-                p={4}
-                rounded="xl"
-                minW="sm"
-              >
-                <Stack>
-                  {navItem.children.map((child) => (
-                    <DesktopSubNav key={child.label} {...child} />
-                  ))}
-                </Stack>
-              </PopoverContent>
-            )}
-          </Popover>
-        </Box>
-      ))}
-    </Stack>
-  );
-};
-
-const MobileNavItem = ({ label, children, href }: NavItem) => {
-  const { isOpen, onToggle } = useDisclosure();
-  const t = useTranslations('Header.navigation');
-
-  return (
-    <Stack spacing={4} onClick={children && onToggle}>
-      <Flex
-        py={2}
-        as={Link}
-        href={href ?? '#'}
-        justify="space-between"
-        align="center"
-        _hover={{
-          textDecoration: 'none',
-        }}
-      >
-        <Text
-          fontWeight={600}
-          color={useColorModeValue('gray.600', 'gray.200')}
-        >
-          {t(label)}
-        </Text>
-        {children && (
-          <Icon
-            as={FiChevronDown}
-            transition="all .25s ease-in-out"
-            transform={isOpen ? 'rotate(180deg)' : ''}
-            w={6}
-            h={6}
-          />
-        )}
-      </Flex>
-
-      <Collapse in={isOpen} animateOpacity style={{ marginTop: '0!important' }}>
-        <Stack
-          mt={2}
-          pl={4}
-          borderLeft={1}
-          borderStyle="solid"
-          borderColor={useColorModeValue('gray.200', 'gray.700')}
-          align="start"
-        >
-          {children &&
-            children.map((child) => (
-              <Link as={NextLink} key={child.label} py={2} href={child.href}>
-                {child.label}
+                {item.label}
               </Link>
             ))}
-        </Stack>
-      </Collapse>
-    </Stack>
-  );
-};
-
-const MobileNav = () => {
-  return (
-    <Stack
-      bg={useColorModeValue('white', 'gray.800')}
-      p={4}
-      display={{ md: 'none' }}
-    >
-      {NAV_ITEMS.map((navItem) => (
-        <MobileNavItem key={navItem.label} {...navItem} />
-      ))}
-    </Stack>
-  );
-};
-
-const Header = () => {
-  const { isOpen, onToggle } = useDisclosure();
-  const textColorPrimary = useColorModeValue('#363636', '#FFFFFF');
-  const textColorSecondary = useColorModeValue('#2563EB', '#60A5FA');
-  const t = useTranslations();
-
-  return (
-    <>
-      <Text
-        id="atafin"
-        fontSize="xl"
-        fontWeight="bold"
-        textAlign="center"
-        color={useColorModeValue('gray.600', 'gray.200')}
-      >
-        {t('Header.navigation.home')}
-      </Text>
-      <Box height="60px" />
-
-      <Box
-        position="fixed"
-        top="0"
-        left="0"
-        right="0"
-        zIndex={1000}
-        bg={useColorModeValue('white', 'gray.800')}
-        boxShadow="sm"
-        width="100%"
-      >
-        <Flex
-          bg={useColorModeValue('white', 'gray.800')}
-          color={useColorModeValue('gray.600', 'white')}
-          minH="60px"
-          py={{ base: 2 }}
-          px={{ base: 4 }}
-          borderBottom={1}
-          borderStyle="solid"
-          borderColor={useColorModeValue('gray.200', 'gray.900')}
-          align="center"
-        >
-          <Flex
-            flex={{ base: 1 }}
-            justify={{ base: 'left', md: 'start' }}
-            align="center"
+          </nav>
+        </div>
+        <div className="flex flex-1 items-center justify-end space-x-2">
+          <ThemeToggle />
+          <button
+            className="inline-flex items-center justify-center rounded-md p-2 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-50 md:hidden"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle mobile menu"
           >
+            <MenuIcon />
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <nav className="space-y-1 px-2 pb-3 pt-2 md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
+          {navItems.map((item) => (
             <Link
-              as={NextLink}
-              href="/"
-              _hover={{ opacity: 0.8 }}
-              transition="opacity 0.2s"
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'block rounded-md px-3 py-2 text-base font-medium transition-colors',
+                pathname === item.href
+                  ? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-50'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-50'
+              )}
             >
-              <Box
-                width={{ base: '60px', md: '345px' }}
-                height={{ base: '30px', md: '75px' }}
-                display="flex"
-                alignItems="center"
-              >
-                {/* Mobile Logo (NS only) */}
-                <Box display={{ base: 'block', md: 'none' }}>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="100%"
-                    height="100%"
-                    viewBox="0 0 1500 800"
-                    style={{
-                      filter: 'drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.1))',
-                    }}
-                  >
-                    <text
-                      x="65"
-                      y="600"
-                      fontFamily="Sofia"
-                      fontSize="700"
-                      fill={textColorPrimary}
-                    >
-                      N
-                    </text>
-                    <text
-                      x="650"
-                      y="600"
-                      fontFamily="Sofia"
-                      fontSize="700"
-                      fill={textColorSecondary}
-                    >
-                      S
-                    </text>
-                  </svg>
-                </Box>
-
-                {/* Desktop Logo (full version) - keeping the same */}
-                <Box display={{ base: 'none', md: 'block' }}>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="100%"
-                    height="100%"
-                    viewBox="0 0 3500 800"
-                    style={{
-                      filter: 'drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.1))',
-                    }}
-                  >
-                    <text
-                      x="65"
-                      y="517.16989"
-                      fontFamily="Sofia"
-                      fontSize="420"
-                      fill={textColorPrimary}
-                    >
-                      N
-                    </text>
-                    <text
-                      x="459.65217"
-                      y="517.16989"
-                      fontFamily="Sofia"
-                      fontSize="420"
-                      fill={textColorSecondary}
-                    >
-                      S
-                    </text>
-                    <text
-                      x="800"
-                      y="517.16989"
-                      fontFamily="Afacad"
-                      fontSize="159"
-                      fontStyle="italic"
-                      fill={textColorSecondary}
-                    >
-                      NEXTJS
-                    </text>
-                    <text
-                      x="1200"
-                      y="517.16989"
-                      fontFamily="Afacad"
-                      fontSize="159"
-                      fontStyle="italic"
-                      fill={textColorPrimary}
-                    >
-                      STARTER KIT
-                    </text>
-                  </svg>
-                </Box>
-              </Box>
+              {item.label}
             </Link>
-          </Flex>
-          <Flex display={{ base: 'none', md: 'flex' }} ml={10}>
-            <DesktopNav />
-          </Flex>
-          <Spacer />
-          <Stack
-            flex={{ base: 1, md: 0 }}
-            justify="flex-end"
-            direction="row"
-            spacing={3}
-          >
-            <LanguageSwitcher />
-            <ThemeToggle />
-            <Spacer />
-            <Flex
-              flex={{ base: 1, md: 'auto' }}
-              ml={{ base: -2 }}
-              display={{ base: 'flex', md: 'none' }}
-            >
-              <IconButton aria-label="Toggle Navigation" onClick={onToggle}>
-                {isOpen ? <AiOutlineClose /> : <GiHamburgerMenu />}
-              </IconButton>
-            </Flex>
-          </Stack>
-        </Flex>
-
-        <Collapse in={isOpen} animateOpacity>
-          <MobileNav />
-        </Collapse>
-      </Box>
-    </>
+          ))}
+        </nav>
+      )}
+    </header>
   );
-};
-
-export default Header;
+}

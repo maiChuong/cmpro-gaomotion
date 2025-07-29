@@ -1,0 +1,26 @@
+
+export type MediaPipeMode = 'facial' | 'full-body';
+export type LoadingState = 'idle' | 'downloadingWasm' | 'downloadingModel' | 'ready';
+export type OnProgressCallback = (state: LoadingState, progress?: number) => void;
+
+/**
+ * A service class to encapsulate MediaPipe's vision tasks.
+        baseOptions: {
+          modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+          delegate: 'GPU',
+          modelAssetLoadListener: ({ loaded, total }) => {
+            onProgress?.('downloadingModel', loaded / (total || 1));
+          },
+        },
+        outputFaceBlendshapes: true,
+        runningMode: 'VIDEO',
+        baseOptions: {
+          modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`,
+          delegate: 'GPU',
+          modelAssetLoadListener: ({ loaded, total }) => {
+            onProgress?.('downloadingModel', loaded / (total || 1));
+          },
+        },
+        runningMode: 'VIDEO',
+        numPoses: 1,
+
