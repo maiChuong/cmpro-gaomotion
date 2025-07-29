@@ -1,0 +1,157 @@
+import {
+  FaceLandmarker,
+  PoseLandmarker,
+  FilesetResolver,
+  DrawingUtils,
+  FaceLandmarkerResult,
+  PoseLandmarkerResult,
+} from '@mediapipe/tasks-vision';
+
+export type MediaPipeMode = 'facial' | 'full-body';
+export type LoadingState = 'idle' | 'downloadingWasm' | 'downloadingModel' | 'ready';
+export type OnProgressCallback = (state: LoadingState, progress?: number) => void;
+
+
+/**
+ * A service class to encapsulate MediaPipe's vision tasks.
+ * It handles initialization, prediction, and drawing for both face and pose landmarks.
+ */
+export class MediaPipeService {
+  private faceLandmarker?: FaceLandmarker;
+  private poseLandmarker?: PoseLandmarker;
+  private drawingUtils?: DrawingUtils;
+  private vision?: FilesetResolver;
+  private mode?: MediaPipeMode;
+
+  /**
+   * Initializes the MediaPipe service asynchronously.
+   * @param mode - The tracking mode ('facial' or 'full-body').
+   * @param canvasContext - The 2D rendering context of the canvas to draw on.
+   * @param onProgress - An optional callback to report loading progress.
+   */
+  async initialize(
+    mode: MediaPipeMode,
+    canvasContext: CanvasRenderingContext2D,
+    onProgress?: OnProgressCallback,
+  ): Promise<void> {
+    this.mode = mode;
+
+    onProgress?.('downloadingWasm');
+    this.vision = await FilesetResolver.forVisionTasks(
+      // Path to the MediaPipe WASM files.
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
+    );
+    this.drawingUtils = new DrawingUtils(canvasContext);
+
+    onProgress?.('downloadingModel');
+    if (mode === 'facial') {
+      this.faceLandmarker = await FaceLandmarker.createFromOptions(this.vision, {
+        baseOptions: {
+          modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+          delegate: 'GPU',
+          modelAssetLoadListener: ({ loaded, total }) => {
+            onProgress?.('downloadingModel', loaded / (total || 1));
+          },
+        },
+        outputFaceBlendshapes: true,
+        runningMode: 'VIDEO',
+        numFaces: 1,
+      });
+    } else {
+      // 'full-body'
+      this.poseLandmarker = await PoseLandmarker.createFromOptions(this.vision, {
+        baseOptions: {
+          modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`,
+          delegate: 'GPU',
+          modelAssetLoadListener: ({ loaded, total }) => {
+            onProgress?.('downloadingModel', loaded / (total || 1));
+          },
+        },
+        runningMode: 'VIDEO',
+        numPoses: 1,
+      });
+    }
+    onProgress?.('ready');
+  }
+
+  /**
+   * Detects landmarks in a video frame for the initialized mode.
+   * @param video - The HTMLVideoElement to process.
+   * @param timestamp - The current time in milliseconds.
+   * @returns The detection result, or undefined if not ready.
+   */
+  predict(
+    video: HTMLVideoElement,
+    timestamp: number,
+  ): FaceLandmarkerResult | PoseLandmarkerResult | undefined {
+    if (this.mode === 'facial' && this.faceLandmarker) {
+      return this.faceLandmarker.detectForVideo(video, timestamp);
+    } else if (this.mode === 'full-body' && this.poseLandmarker) {
+      return this.poseLandmarker.detectForVideo(video, timestamp);
+    }
+    return undefined;
+  }
+
+  /**
+   * Draws the results of a prediction onto the canvas.
+   * @param results - The landmark results from the `predict` method.
+   */
+  drawResults(results: FaceLandmarkerResult | PoseLandmarkerResult): void {
+    if (!this.drawingUtils) return;
+
+    if (this.mode === 'facial' && 'faceLandmarks' in results) {
+      this.drawFaceLandmarks(results as FaceLandmarkerResult);
+    } else if (this.mode === 'full-body' && 'landmarks' in results) {
+      this.drawPoseLandmarks(results as PoseLandmarkerResult);
+    }
+  }
+
+  /**
+   * Clears the canvas.
+   */
+  clearCanvas(): void {
+    if (!this.drawingUtils) return;
+    const canvas = this.drawingUtils.canvas;
+    this.drawingUtils.ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  private drawFaceLandmarks(results: FaceLandmarkerResult): void {
+    if (!this.drawingUtils) return;
+    for (const landmarks of results.faceLandmarks) {
+      this.drawingUtils.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+        { color: '#C0C0C070', lineWidth: 1 },
+      );
+      this.drawingUtils.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
+        { color: '#FF3030' },
+      );
+      this.drawingUtils.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
+        { color: '#30FF30' },
+      );
+      // Add more connectors as needed (lips, eyebrows, etc.)
+    }
+  }
+
+  private drawPoseLandmarks(results: PoseLandmarkerResult): void {
+    if (!this.drawingUtils) return;
+    for (const landmarks of results.landmarks) {
+      this.drawingUtils.drawConnectors(landmarks, PoseLandmarker.POSE_CONNECTIONS);
+      this.drawingUtils.drawLandmarks(landmarks, {
+        radius: (data) => DrawingUtils.lerp(data.from!.z, -0.15, 0.1, 5, 1),
+      });
+    }
+  }
+
+  /**
+   * Closes the landmarker instances to free up resources.
+   */
+  close(): void {
+    this.faceLandmarker?.close();
+    this.poseLandmarker?.close();
+  }
+}
