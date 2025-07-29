@@ -37,7 +37,9 @@ export class MediaPipeService {
     this.drawingUtils = new DrawingUtils(canvasContext);
 
     if (mode === 'facial') {
-      this.faceLandmarker = await FaceLandmarker.createFromOptions(this.vision, {
+      this.faceLandmarker = await FaceLandmarker.createFromOptions(
+        this.vision,
+        {
         baseOptions: {
           modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
           delegate: 'GPU',

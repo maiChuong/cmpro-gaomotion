@@ -1,23 +1,24 @@
-'use client';
-
-import { PageLayout } from '@/components/layout/PageLayout';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 
-export default function NotFoundPage() {
+/**
+ * A custom 404 Not Found page.
+ * Next.js automatically renders this file when a route is not found.
+ * https://nextjs.org/docs/app/api-reference/file-conventions/not-found
+ */
+export default function NotFound() {
   return (
-    <PageLayout>
-      <div className="flex flex-col items-center justify-center text-center">
-        <h1 className="text-6xl font-bold text-gray-800 dark:text-gray-200">404</h1>
-        <p className="mt-4 text-xl text-gray-600 dark:text-gray-400">
-          Oops! The page you're looking for could not be found.
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
+      <div className="p-8 bg-card rounded-lg shadow-lg text-center max-w-md mx-auto">
+        <h1 className="text-9xl font-bold text-primary">404</h1>
+        <h2 className="text-2xl font-semibold mt-4">Page Not Found</h2>
+        <p className="mt-2 text-muted-foreground">
+          We can&apos;t seem to find the page you&apos;re looking for.
         </p>
-        <p className="mt-2 text-gray-500 dark:text-gray-500">
-          It might have been moved or deleted.
-        </p>
-        <Button href="/" className="mt-8">
-          Go back to Home
+        <Button asChild className="mt-6">
+          <Link href="/">Go back home</Link>
         </Button>
       </div>
-    </PageLayout>
+    </div>
   );
 }

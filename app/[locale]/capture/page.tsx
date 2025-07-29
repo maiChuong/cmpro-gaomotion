@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/Button';
 import { useMediaPipe } from '@/hooks/useMediaPipe';
-import { MediaPipeMode } from '@/services/motion/mediapipe';
 import { exportMotionDataAsJson } from '@/lib/json-export';
 import { useSettingsStore } from '@/store/settingsStore';
 
@@ -14,7 +13,8 @@ export default function CapturePage() {
   const [isCapturing, setIsCapturing] = useState(false); // Is MediaPipe processing?
   const [isCameraEnabled, setIsCameraEnabled] = useState(false); // Is webcam stream active?
   const [webcamError, setWebcamError] = useState<string | null>(null);
-  const { captureMode: trackingMode, setCaptureMode: setTrackingMode } = useSettingsStore();
+  const { captureMode: trackingMode, setCaptureMode: setTrackingMode } =
+    useSettingsStore();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const {
@@ -26,11 +26,11 @@ export default function CapturePage() {
     getCapturedFrames,
     clearCapturedFrames,
   } = useMediaPipe({
-      videoRef,
-      canvasRef,
-      mode: trackingMode,
-      isCapturing,
-    });
+    videoRef,
+    canvasRef,
+    mode: trackingMode,
+    isCapturing,
+  });
 
   const stopWebcam = useCallback(() => {
     if (videoRef.current && videoRef.current.srcObject) {
@@ -51,7 +51,9 @@ export default function CapturePage() {
       // Start capturing
       if (!isCameraEnabled) {
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          });
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
             await videoRef.current.play();
@@ -90,47 +92,71 @@ export default function CapturePage() {
     <PageLayout>
       <div className="w-full max-w-4xl p-6 bg-white rounded-lg shadow-md dark:bg-gray-800">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Live Capture</h1>
+          <span className="w-3 h-3 bg-red-400 rounded-full mr-2 animate-pulse"></span>
+          Live Capture
           <Link href="/" className="text-sm text-blue-500 hover:underline">
             &larr; Back to Home
           </Link>
         </div>
 
         <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
-          <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted></video>
-          <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full"></canvas>
+          <video
+            ref={videoRef}
+            className="w-full h-full object-cover"
+            autoPlay
+            playsInline
+            muted
+          ></video>
+          <canvas
+            ref={canvasRef}
+            className="absolute top-0 left-0 w-full h-full"
+          ></canvas>
           {/* Status Overlay */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-black bg-opacity-50 pointer-events-none text-center p-4">
             {webcamError ? (
               <>
-                <p className="text-lg font-semibold text-red-500">Webcam Error</p>
+                <p className="text-lg font-semibold text-red-500">
+                  Webcam Error
+                </p>
                 <p className="text-sm">{webcamError}</p>
               </>
             ) : mediaPipeError ? (
               <>
-                <p className="text-lg font-semibold text-red-500">Processing Error</p>
+                <p className="text-lg font-semibold text-red-500">
+                  Processing Error
+                </p>
                 <p className="text-sm">{mediaPipeError}</p>
               </>
             ) : isMediaPipeLoading ? (
               <>
-                {loadingState === 'downloadingWasm' && <p>Downloading Engine...</p>}
+                {loadingState === 'downloadingWasm' && (
+                  <p>Downloading Engine...</p>
+                )}
                 {loadingState === 'downloadingModel' && (
                   <div className="w-3/4 max-w-sm text-center">
                     <p className="mb-2">Downloading {trackingMode} Model...</p>
                     <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                       <div
                         className="bg-blue-600 h-2.5 rounded-full transition-all duration-150"
-                        style={{ width: `${Math.round(downloadProgress * 100)}%` }}
+                        style={{
+                          width: `${Math.round(downloadProgress * 100)}%`,
+                        }}
                       ></div>
                     </div>
-                    <p className="text-xs mt-1 opacity-80">{Math.round(downloadProgress * 100)}%</p>
+                    <p className="text-xs mt-1 opacity-80">
+                      {Math.round(downloadProgress * 100)}%
+                    </p>
                   </div>
                 )}
               </>
             ) : isCapturing ? (
               <>
-                <p className="text-2xl font-bold tracking-widest text-red-500">RECORDING</p>
-                <p className="text-sm opacity-80">{frameCount} frames captured</p>
+                <p className="text-2xl font-bold tracking-widest text-red-500">
+                  RECORDING
+                </p>
+                <p className="text-sm opacity-80">
+                  {frameCount} frames captured
+                </p>
               </>
             ) : isCameraEnabled ? (
               <p className="text-lg font-semibold">Paused</p>
@@ -143,7 +169,9 @@ export default function CapturePage() {
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 items-center gap-4">
           {/* Left: Tracking Mode */}
           <div className="flex items-center justify-center sm:justify-start gap-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Mode:</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Mode:
+            </span>
             <Button
               onClick={() => setTrackingMode('facial')}
               variant={trackingMode === 'facial' ? 'primary' : 'outline'}

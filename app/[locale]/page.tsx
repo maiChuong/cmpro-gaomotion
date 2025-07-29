@@ -1,18 +1,30 @@
-// app/[locale]/page.tsx
 'use client';
 
-import React from 'react';
-// import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/Button';
-import { useTunnelStore } from '@/store/tunnelStore';
-import { useSettingsStore } from '@/store/settingsStore';
+import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import Link from 'next/link';
+
+// Mock hook for demonstration purposes
+type Status = 'disconnected' | 'connecting' | 'connected' | 'error';
+const useConnection = () => {
+  const [status, setStatus] = useState<Status>('disconnected');
+  const connect = () => {
+    setStatus('connecting');
+    setTimeout(() => setStatus('connected'), 2000);
+  };
+  const disconnect = () => setStatus('disconnected');
+  return { status, connect, disconnect };
+};
 
 export default function HomePage() {
-  // const t = useTranslations('HomePage');
-  const { captureMode, setCaptureMode } = useSettingsStore();
-  // Sync with global store for tunnel URL
-  const { url, setUrl, status, connect, disconnect } = useTunnelStore();
+  const t = useTranslations('HomePage');
+  const [host, setHost] = useState('localhost');
+  const [port, setPort] = useState('8080');
+  const { status, connect, disconnect } = useConnection();
 
   const handleConnect = () => {
     if (status === 'connected') {
@@ -24,94 +36,76 @@ export default function HomePage() {
 
   return (
     <PageLayout>
-      <div className="container mx-auto flex flex-col items-center justify-center gap-12 px-4 py-16">
-        {/* Hero Section */}
-        <div className="text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl md:text-6xl">
-            Gao<span className="text-primary">Motion</span>
-          </h1>
-          <p className="mt-4 max-w-2xl text-lg text-muted-foreground md:text-xl">
-            High-quality facial and full-body motion capture, right in your browser.
-            <br />
-            Live-sync with Blender or process existing video files.
-          </p>
+      <div className="w-full max-w-2xl p-6 mx-auto bg-card rounded-lg shadow-md">
+        <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
+        <p className="text-muted-foreground mb-6">{t('subtitle')}</p>
+
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <Label htmlFor="host">{t('hostLabel')}</Label>
+              <Input
+                id="host"
+                value={host}
+                onChange={(e) => setHost(e.target.value)}
+                placeholder="e.g., localhost"
+                disabled={status === 'connecting' || status === 'connected'}
+              />
+            </div>
+            <div className="w-full sm:w-32">
+              <Label htmlFor="port">{t('portLabel')}</Label>
+              <Input
+                id="port"
+                type="number"
+                value={port}
+                onChange={(e) => setPort(e.target.value)}
+                placeholder="e.g., 8080"
+                disabled={status === 'connecting' || status === 'connected'}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-4">
+            <Button
+              onClick={handleConnect}
+              disabled={status === 'connecting'}
+              loading={status === 'connecting'}
+              variant={status === 'connected' ? 'destructive' : 'primary'}
+            >
+              {status === 'connecting'
+                ? 'Connecting...'
+                : status === 'connected'
+                ? 'Disconnect'
+                : 'Connect to Blender'}
+            </Button>
+
+            <div
+              className="flex items-center gap-1.5"
+              title={`Tunnel status: ${status}`}
+            >
+              <span
+                className={`h-3 w-3 rounded-full transition-colors ${
+                  status === 'connected'
+                    ? 'bg-success'
+                    : status === 'connecting'
+                    ? 'bg-yellow-500 animate-pulse'
+                    : status === 'error'
+                    ? 'bg-destructive'
+                    : 'bg-muted-foreground'
+                }`}
+              />
+              <span className="text-sm font-medium capitalize text-muted-foreground">
+                {status}
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Interactive Control Panel */}
-        <div className="w-full max-w-lg p-8 space-y-6 border rounded-lg shadow-lg bg-background">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-2">
-                1. Choose Capture Mode
-              </label>
-              <div className="flex gap-4">
-                <Button
-                  onClick={() => setCaptureMode('facial')}
-                  variant={captureMode === 'facial' ? 'primary' : 'outline'}
-                  className="w-full"
-                >
-                  Facial
-                </Button>
-                <Button
-                  onClick={() => setCaptureMode('full-body')}
-                  variant={captureMode === 'full-body' ? 'primary' : 'outline'}
-                  className="w-full"
-                >
-                  Full Body
-                </Button>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label
-                  htmlFor="tunnel-url"
-                  className="block text-sm font-medium text-muted-foreground"
-                >
-                  2. Input Tunnel URL (for Live Sync)
-                </label>
-                <div className="flex items-center gap-1.5" title={`Tunnel status: ${status}`}>
-                  <span
-                    className={`h-2.5 w-2.5 rounded-full transition-colors ${
-                      status === 'connected' ? 'bg-success' :
-                      status === 'connecting' ? 'bg-yellow-500 animate-pulse' :
-                      status === 'error' ? 'bg-destructive' :
-                      'bg-muted-foreground'
-                    }`}
-                  ></span>
-                  <span className="text-xs text-muted-foreground capitalize">{status}</span>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  id="tunnel-url"
-                  type="text"
-                  placeholder="ws://localhost:8765 (optional)"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="flex-grow px-3 py-2 border border-input rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-ring bg-background"
-                  disabled={status === 'connecting' || status === 'connected'}
-                />
-                <Button
-                  onClick={handleConnect}
-                  variant={status === 'connected' ? 'danger' : 'primary'}
-                  className="w-28"
-                  disabled={status === 'connecting'}
-                >
-                  {status === 'connecting' ? 'Connecting...' : status === 'connected' ? 'Disconnect' : 'Connect'}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 pt-4">
-            <Button href="/upload" variant="secondary" className="w-full">
-              Upload Video
-            </Button>
-            <Button href="/capture" variant="primary" className="w-full">
-              Start Live Capture
-            </Button>
-          </div>
+        <div className="mt-8 text-center">
+          <p className="text-muted-foreground">{t('capturePrompt')}</p>
+          <Button asChild variant="link" className="text-lg">
+            <Link href="/capture">{t('captureLink')}</Link>
+          </Button>
         </div>
       </div>
     </PageLayout>

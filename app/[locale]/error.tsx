@@ -1,10 +1,9 @@
-'use client';
+'use client'; // Error components must be Client Components
 
 import { useEffect } from 'react';
-import { PageLayout } from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/Button';
 
-export default function GlobalErrorPage({
+export default function Error({
   error,
   reset,
 }: {
@@ -17,19 +16,23 @@ export default function GlobalErrorPage({
   }, [error]);
 
   return (
-    <PageLayout>
-      <div className="flex flex-col items-center justify-center text-center">
-        <h1 className="text-4xl font-bold text-red-500">Something went wrong!</h1>
-        <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
-          An unexpected error has occurred. Please try again.
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
+      <div className="p-8 bg-card rounded-lg shadow-lg text-center">
+        <h2 className="text-2xl font-bold mb-4 text-destructive">
+          Something went wrong!
+        </h2>
+        <p className="mb-6 text-muted-foreground">
+          An unexpected error has occurred. You can try to reset the page.
         </p>
-        <div className="mt-8 flex gap-4">
-          <Button onClick={() => reset()} variant="outline">
-            Try again
-          </Button>
-          <Button href="/">Go back to Home</Button>
-        </div>
+        <Button
+          onClick={
+            // Attempt to recover by trying to re-render the segment
+            () => reset()
+          }
+        >
+          Try again
+        </Button>
       </div>
-    </PageLayout>
+    </div>
   );
 }

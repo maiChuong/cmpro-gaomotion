@@ -1,0 +1,19 @@
+{
+  "HomePage": {
+    "title": "GaoMotion Blender Connector",
+    "subtitle": "Connect to your local Blender instance to stream motion data in real-time.",
+    "hostLabel": "Host",
+    "portLabel": "Port",
+    "capturePrompt": "Ready to start capturing?",
+    "captureLink": "Go to Capture Page",
+    "connect": "Connect to Blender",
+    "connecting": "Connecting...",
+    "disconnect": "Disconnect",
+    "title": "Tunnel status: {status}",
+    "disconnected": "Disconnected",
+    "connecting": "Connecting",
+    "connected": "Connected",
+    "error": "Error"
+
+  }
+}

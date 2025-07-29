@@ -1,44 +1,55 @@
+import type { Metadata } from 'next';
+import React from 'react';
 import { Inter } from 'next/font/google';
-import '@/styles/globals.css';
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import { Metadata } from 'next';
-import { ToasterProvider } from '@/components/ToasterProvider';
+import { Toaster } from 'react-hot-toast';
+import { getMessages } from 'next-intl/server';
+import { NextIntlClientProvider } from 'next-intl';
+import '@/styles/globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-sans',
+});
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | GaoMotion',
-    default: 'GaoMotion - Browser-based Motion Capture for Blender',
+    default: 'GaoMotion',
+    template: `%s | GaoMotion`,
   },
-  description:
-    'High-quality facial and full-body motion capture, right in your browser. Live-sync with Blender or process video files.',
+  description: 'AI-Powered Motion Capture for everyone.',
   icons: {
-    icon: [
-      { rel: 'icon', url: '/favicon.ico' },
-      { rel: 'icon', url: '/favicon.svg', type: 'image/svg+xml' },
-    ],
+    icon: '/favicon.ico',
   },
 };
 
 export default async function RootLayout({
   children,
-  params: { locale },
+  params,
 }: {
   children: React.ReactNode;
   params: { locale: string };
 }) {
-  // According to next-intl docs, this is the way to get messages for the current locale.
   const messages = await getMessages();
+
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <ToasterProvider />
-          <NextIntlClientProvider messages={messages}>
+    <html lang={params.locale} suppressHydrationWarning>
+      <body
+        className={cn(
+          'min-h-screen bg-background font-sans antialiased',
+          inter.variable,
+        )}
+      >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <NextIntlClientProvider locale={params.locale} messages={messages}>
             {children}
+            <Toaster position="top-center" />
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>
