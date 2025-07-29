@@ -111,7 +111,10 @@ const CaptureView = ({
       </div>
 
       <div className="w-full mb-4">
-        <InputSelector onSourceChange={handleSourceChange} />
+        <InputSelector
+          currentSource={inputSource}
+          onSourceSelect={(source) => handleSourceChange(source)}
+        />
       </div>
 
       <div className="grid w-full grid-cols-1 md:grid-cols-2 gap-4 aspect-video">

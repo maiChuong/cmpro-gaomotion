@@ -1,210 +1,195 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { DrawingUtils } from '@mediapipe/drawing_utils';
 import {
-  createMotionLandmarker,
   MotionLandmarker,
-} from '@/services/motion/capture';
-import { CaptureType, InputSourceType } from '@/components/MotionSelector';
-import {
+  FilesetResolver,
+  MotionLandmarkerResult,
+  PoseLandmarker,
   FaceLandmarker,
   HandLandmarker,
-  PoseLandmarker,
-  NormalizedLandmark,
+  DrawingUtils,
 } from '@mediapipe/tasks-vision';
-// This will eventually hold the structured data from MediaPipe.
-export type MotionData = any;
-// TODO: Add DrawingUtils to visualize the landmarks on the canvas.
+import { CaptureType } from '@/components/MotionSelector';
+// import { InputSourceType } from '@/components/InputSelector';
 
-export interface UseMotionCaptureProps {
-  captureType: CaptureType | null;
+/**
+ * Re-exporting MotionLandmarkerResult as MotionData for consistency in the app.
+ */
+export type MotionData = MotionLandmarkerResult;
+
+/**
+ * Props for the useMotionCapture hook.
+ */
+interface useMotionCaptureProps {
   inputSource: InputSourceType;
   videoUrl?: string;
-  onData?: (data: MotionData) => void;
+  captureType: CaptureType;
+  onData: (data: MotionData) => void;
 }
 
-export const useMotionCapture = ({ captureType, onData }: UseMotionCaptureProps) => {
+/**
+ * A custom hook to manage MediaPipe motion capture from a webcam or video file.
+ * It handles the initialization of the MotionLandmarker, manages the video stream,
+ * runs the detection loop, and draws the results onto a canvas.
+ */
+export const useMotionCapture = ({
+  inputSource,
+  videoUrl,
+  captureType,
+  onData,
+}: useMotionCaptureProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const motionLandmarkerRef = useRef<MotionLandmarker | null>(null);
+  const lastVideoTimeRef = useRef(-1);
+  const animationFrameIdRef = useRef<number | null>(null);
 
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const drawingUtilsRef = useRef<DrawingUtils | null>(null);
-  // A ref to hold the MediaPipe landmarker instance.
-  const landmarkerRef = useRef<MotionLandmarker | null>(null);
-  // A ref to hold the animation frame request ID.
-  const animationFrameId = useRef<number | null>(null);
-
   /**
-   * Stops the video stream and cleans up resources.
+   * Creates and initializes the MotionLandmarker instance.
+   * This is an asynchronous operation that needs to fetch the model files.
    */
+  const createMotionLandmarker = useCallback(async () => {
+    try {
+      const vision = await FilesetResolver.forVisionTasks(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
+      );
+      const landmarker = await MotionLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: `https://storage.googleapis.com/mediapipe-models/motion_landmarker/motion_landmarker/float16/1/motion_landmarker.task`,
+          delegate: 'GPU',
+        },
+        runningMode: 'VIDEO',
+        numPoses: 1,
+        minPoseDetectionConfidence: 0.5,
+        minPosePresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
+      motionLandmarkerRef.current = landmarker;
+      setError(null);
+    } catch (e) {
+      console.error('Failed to create MotionLandmarker:', e);
+      setError('Failed to initialize motion capture model. Please try again.');
+    }
+  }, []);
+
+  // Initialize the landmarker when the component mounts.
+  useEffect(() => {
+    if (!motionLandmarkerRef.current) {
+      createMotionLandmarker();
+    }
+  }, [createMotionLandmarker]);
+
   const stopCapture = useCallback(() => {
-    if (animationFrameId.current) {
-      cancelAnimationFrame(animationFrameId.current);
-      animationFrameId.current = null;
+    if (animationFrameIdRef.current) {
+      cancelAnimationFrame(animationFrameIdRef.current);
+      animationFrameIdRef.current = null;
+    }
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach((track) => track.stop());
+      videoRef.current.srcObject = null;
     }
     setIsCameraOn(false);
+    setIsProcessing(false);
+  }, []);
 
-    const video = videoRef.current;
-    if (!video) return;
-
-    // Stop webcam stream if it exists
-    if (video.srcObject) {
-      const stream = video.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
-      video.srcObject = null;
-    }
-
-    // Reset video element for file source
-    if (video.src) {
-      video.pause();
-      video.removeAttribute('src'); // More robust than video.src = ''
-      video.load(); // Resets the video element
-    }
-  }, [videoRef]);
-
-  /**
-   * The main prediction loop.
-   */
-  const predictVideoFrame = useCallback(() => {
-    const video = videoRef.current;
-    const landmarker = landmarkerRef.current;
-    const canvas = canvasRef.current;
-    const drawingUtils = drawingUtilsRef.current;
-
-    // Ensure everything is ready for prediction.
-    if (!video || !landmarker || !canvas || !drawingUtils || video.paused || video.ended) {
-      return;
-    }
-
-    const canvasCtx = canvas.getContext('2d');
-    if (!canvasCtx) return;
-
-    // Use performance.now() for timestamping, as required by MediaPipe.
-    const startTimeMs = performance.now();
-    const results = landmarker.detectForVideo(video, startTimeMs);
-
-    // Clear the canvas and draw the new results.
-    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (results && onData) {
-      // Pass the raw data to the callback.
-      onData(results);
-
-      // Draw Pose landmarks
-      if (results.landmarks && captureType === 'pose') {
-        for (const landmarks of results.landmarks as NormalizedLandmark[][]) {
-          drawingUtils.drawConnectors(landmarks, PoseLandmarker.POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
-          drawingUtils.drawLandmarks(landmarks, { color: '#FF0000', radius: 6 });
-        }
-      }
-      // Draw Hand landmarks
-      if (results.landmarks && captureType === 'hands') {
-        for (const landmarks of results.landmarks as NormalizedLandmark[][]) {
-          drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: '#00CCFF', lineWidth: 5 });
-          drawingUtils.drawLandmarks(landmarks, { color: '#FF00FF', lineWidth: 2 });
-        }
-      }
-      // Draw Face landmarks
-      if (results.landmarks && captureType === 'face') {
-        for (const landmarks of results.landmarks as NormalizedLandmark[][]) {
-          drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: '#C0C0C070', lineWidth: 1 });
-          drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE, { color: '#FF3030' });
-          drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW, { color: '#FF3030' });
-          drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYE, { color: '#30FF30' });
-          drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW, { color: '#30FF30' });
-          drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_FACE_OVAL, { color: '#E0E0E0' });
-          drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LIPS, { color: '#E0E0E0' });
-        }
-      }
-    }
-
-    // Continue the loop.
-    animationFrameId.current = requestAnimationFrame(predictVideoFrame);
-  }, [videoRef, canvasRef, onData, captureType]);
-
-  /**
-   * Initializes the MediaPipe landmarker when the capture type changes.
-   */
+  // Cleanup on unmount
   useEffect(() => {
-    if (!captureType) {
-      if (isCameraOn) stopCapture();
-      return;
-    }
-
-    const initialize = async () => {
-      setError(null);
-      setIsProcessing(true);
-      try {
-        const landmarker = await createMotionLandmarker(captureType);
-        landmarkerRef.current = landmarker;
-        // Initialize DrawingUtils
-        const canvasCtx = canvasRef.current?.getContext('2d');
-        if (canvasCtx) {
-          drawingUtilsRef.current = new DrawingUtils(canvasCtx);
-        }
-      } catch (e) {
-        console.error(e);
-        const errorMessage = e instanceof Error ? e.message : String(e);
-        setError(`Failed to initialize MediaPipe: ${errorMessage}`);
-      } finally {
-        setIsProcessing(false);
-      }
-    };
-
-    initialize();
-
-    // Cleanup on component unmount or when captureType changes.
     return () => {
-      landmarkerRef.current?.close();
-      landmarkerRef.current = null;
       stopCapture();
+      motionLandmarkerRef.current?.close();
     };
-  }, [captureType, stopCapture]);
+  }, [stopCapture]);
 
-  /**
-   * Starts the camera feed. The prediction loop will be triggered
-   * from here once the video is playing.
-   */
+  const predict = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const landmarker = motionLandmarkerRef.current;
+
+    if (!video || !canvas || !landmarker || video.paused || video.ended) {
+      return;
+    }
+
+    const currentTime = video.currentTime;
+    if (currentTime > lastVideoTimeRef.current) {
+      lastVideoTimeRef.current = currentTime;
+      const results = landmarker.detectForVideo(video, Date.now());
+
+      const canvasCtx = canvas.getContext('2d');
+      if (canvasCtx && results) {
+        const drawingUtils = new DrawingUtils(canvasCtx);
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw landmarks based on capture type
+        if (captureType === 'pose' || captureType === 'holistic') {
+          results.poseLandmarks.forEach((landmarks) => {
+            drawingUtils.drawConnectors(landmarks, PoseLandmarker.POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
+            drawingUtils.drawLandmarks(landmarks, { color: '#FF0000', radius: 5 });
+          });
+        }
+        if (captureType === 'face' || captureType === 'holistic') {
+          results.faceLandmarks.forEach((landmarks) => {
+            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: '#C0C0C070', lineWidth: 1 });
+          });
+        }
+        if (captureType === 'hands' || captureType === 'holistic') {
+          results.handLandmarks.forEach((landmarks) => {
+            drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: '#00CCFF', lineWidth: 5 });
+            drawingUtils.drawLandmarks(landmarks, { color: '#FF0000', radius: 5 });
+          });
+        }
+        onData(results);
+      }
+    }
+
+    animationFrameIdRef.current = requestAnimationFrame(predict);
+  }, [captureType, onData]);
+
   const startCapture = useCallback(async () => {
-    if (!landmarkerRef.current) {
-      setError('Landmarker is not initialized. Please wait or select a type.');
+    if (!motionLandmarkerRef.current) {
+      setError('Motion capture is not ready. Please wait.');
       return;
     }
-    if (!videoRef.current) {
-      setError('Video element is not available.');
-      return;
-    }
+    if (isCameraOn) return;
 
+    stopCapture(); // Ensure previous streams are stopped
+    setIsProcessing(true);
     setError(null);
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      videoRef.current.srcObject = stream;
-      // Set up canvas dimensions once video is ready.
-      videoRef.current.onloadedmetadata = () => {
-        if (videoRef.current && canvasRef.current) {
-          canvasRef.current.width = videoRef.current.videoWidth;
-          canvasRef.current.height = videoRef.current.videoHeight;
-        }
-        setIsCameraOn(true);
-        predictWebcam(); // Start the prediction loop
-      };
-    } catch (e) {
-      setError('Could not access webcam. Please grant permission and try again.');
-    }
-  }, [predictWebcam]);
+      const video = videoRef.current;
+      if (!video) return;
 
-  return {
-    videoRef,
-    canvasRef,
-    isCameraOn,
-    isProcessing,
-    error,
-    startCapture,
-    stopCapture,
-  };
+      if (inputSource === 'webcam') {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
+        video.srcObject = stream;
+      } else if (inputSource === 'video' && videoUrl) {
+        video.src = videoUrl;
+        video.loop = true;
+      } else {
+        throw new Error('Invalid input source or missing video URL.');
+      }
+
+      video.onloadedmetadata = () => {
+        video.play();
+        setIsCameraOn(true);
+        setIsProcessing(false);
+        lastVideoTimeRef.current = -1;
+        predict();
+      };
+    } catch (err) {
+      console.error('Failed to start capture:', err);
+      setError('Failed to access camera or video. Please check permissions and try again.');
+      setIsProcessing(false);
+    }
+  }, [isCameraOn, stopCapture, inputSource, videoUrl, predict]);
+
+  return { videoRef, canvasRef, isCameraOn, isProcessing, error, startCapture, stopCapture };
 };

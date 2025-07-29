@@ -1,50 +1,65 @@
-'use client';
-
 import React from 'react';
 
-// Define the types for capture modes
-export type CaptureType = 'face' | 'pose' | 'hands';
+/**
+ * Defines the types of motion capture available.
+ * - 'pose': Captures body pose only.
+ * - 'face': Captures facial landmarks only.
+ * - 'hands': Captures hand landmarks only.
+ * - 'holistic': Captures all landmarks (pose, face, and hands).
+ */
+export type CaptureType = 'pose' | 'face' | 'hands' | 'holistic';
 
+/**
+ * Props for the MotionSelector component.
+ */
 interface MotionSelectorProps {
+  /**
+   * A callback function that is invoked when a capture type is selected.
+   * @param type The selected capture type.
+   */
   onSelect: (type: CaptureType) => void;
 }
 
-const MotionSelector: React.FC<MotionSelectorProps> = ({ onSelect }) => {
-  const captureOptions: { type: CaptureType; label: string; description: string }[] = [
-    {
-      type: 'face',
-      label: 'Face Capture',
-      description: 'Track facial landmarks for expressions.',
-    },
-    {
-      type: 'pose',
-      label: 'Body Pose Capture',
-      description: 'Track full-body pose for character animation.',
-    },
-    {
-      type: 'hands',
-      label: 'Hand Pose Capture',
-      description: 'Track detailed hand and finger movements.',
-    },
-  ];
+const captureOptions: { type: CaptureType; title: string; description: string }[] = [
+  {
+    type: 'holistic',
+    title: 'Holistic Capture',
+    description: 'Capture full body, face, and hand motion simultaneously.',
+  },
+  {
+    type: 'pose',
+    title: 'Pose Capture',
+    description: 'Capture body pose landmarks only.',
+  },
+  {
+    type: 'face',
+    title: 'Face Capture',
+    description: 'Capture facial expression landmarks.',
+  },
+  {
+    type: 'hands',
+    title: 'Hands Capture',
+    description: 'Capture individual hand and finger tracking.',
+  },
+];
 
+/**
+ * A component that presents the user with different motion capture options
+ * and allows them to select one to begin the capture process.
+ */
+const MotionSelector: React.FC<MotionSelectorProps> = ({ onSelect }) => {
   return (
-    <div className="flex flex-col items-center justify-center space-y-8">
-      <h1 className="text-4xl font-bold">Choose Capture Type</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-        {captureOptions.map((option) => (
-          <button
-            key={option.type}
-            onClick={() => onSelect(option.type)}
-            className="p-6 border rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/30 transition-colors"
-          >
-            <h2 className="text-2xl font-semibold mb-2">{option.label}</h2>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">{option.description}</p>
-          </button>
-        ))}
+    <div className="w-full max-w-2xl text-center">
+      <h1 className="text-4xl font-bold mb-2">Motion Capture</h1>
+      <p className="text-lg text-neutral-600 dark:text-neutral-400 mb-8">Select a capture type to begin.</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {captureOptions.map((option) => (<button key={option.type} onClick={() => onSelect(option.type)} className="p-6 border border-neutral-200 dark:border-neutral-800 rounded-lg text-left hover:bg-neutral-100 dark:hover:bg-neutral-800/30 transition-all duration-200 ease-in-out transform hover:scale-105">
+            <h2 className="text-xl font-semibold mb-2">{option.title}</h2>
+            <p className="text-neutral-500 dark:text-neutral-400">{option.description}</p>
+          </button>))}
       </div>
-    </div>
-  );
+    </div>);
 };
 
 export default MotionSelector;
+
