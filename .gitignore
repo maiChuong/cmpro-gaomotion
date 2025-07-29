@@ -1,2 +1,13 @@
 node_modules
 _local-files/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+VolumeIcon.icns
+com.apple.timemachine.donotpresent
