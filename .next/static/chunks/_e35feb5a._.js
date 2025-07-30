@@ -265,10 +265,7 @@ const useMotionCapture = (param)=>{
     const [isCameraOn, setIsCameraOn] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [isProcessing, setIsProcessing] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [error, setError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
-    /**
-   * Creates and initializes the MotionLandmarker instance.
-   * This is an asynchronous operation that needs to fetch the model files.
-   */ const createMotionLandmarker = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
+    const createMotionLandmarker = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
         "useMotionCapture.useCallback[createMotionLandmarker]": async ()=>{
             try {
                 const vision = await __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mediapipe$2f$tasks$2d$vision$2f$vision_bundle$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FilesetResolver"].forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm');
@@ -291,7 +288,6 @@ const useMotionCapture = (param)=>{
             }
         }
     }["useMotionCapture.useCallback[createMotionLandmarker]"], []);
-    // Initialize the landmarker when the component mounts.
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "useMotionCapture.useEffect": ()=>{
             if (!motionLandmarkerRef.current) {
@@ -303,11 +299,12 @@ const useMotionCapture = (param)=>{
     ]);
     const stopCapture = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
         "useMotionCapture.useCallback[stopCapture]": ()=>{
+            var _videoRef_current;
             if (animationFrameIdRef.current) {
                 cancelAnimationFrame(animationFrameIdRef.current);
                 animationFrameIdRef.current = null;
             }
-            if (videoRef.current && videoRef.current.srcObject) {
+            if ((_videoRef_current = videoRef.current) === null || _videoRef_current === void 0 ? void 0 : _videoRef_current.srcObject) {
                 const stream = videoRef.current.srcObject;
                 stream.getTracks().forEach({
                     "useMotionCapture.useCallback[stopCapture]": (track)=>track.stop()
@@ -318,7 +315,6 @@ const useMotionCapture = (param)=>{
             setIsProcessing(false);
         }
     }["useMotionCapture.useCallback[stopCapture]"], []);
-    // Cleanup on unmount
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "useMotionCapture.useEffect": ()=>{
             return ({
@@ -337,9 +333,7 @@ const useMotionCapture = (param)=>{
             const video = videoRef.current;
             const canvas = canvasRef.current;
             const landmarker = motionLandmarkerRef.current;
-            if (!video || !canvas || !landmarker || video.paused || video.ended) {
-                return;
-            }
+            if (!video || !canvas || !landmarker || video.paused || video.ended) return;
             const currentTime = video.currentTime;
             if (currentTime > lastVideoTimeRef.current) {
                 lastVideoTimeRef.current = currentTime;
@@ -350,7 +344,6 @@ const useMotionCapture = (param)=>{
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
                     canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-                    // Draw landmarks based on capture type
                     if (captureType === 'pose' || captureType === 'holistic') {
                         results.poseLandmarks.forEach({
                             "useMotionCapture.useCallback[predict]": (landmarks)=>{
@@ -405,7 +398,7 @@ const useMotionCapture = (param)=>{
                 return;
             }
             if (isCameraOn) return;
-            stopCapture(); // Ensure previous streams are stopped
+            stopCapture();
             setIsProcessing(true);
             setError(null);
             try {

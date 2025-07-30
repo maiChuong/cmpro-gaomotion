@@ -113,7 +113,7 @@ const CaptureView = ({
       <div className="w-full mb-4">
         <InputSelector
           currentSource={inputSource}
-          onSourceSelect={(source) => handleSourceChange(source)}
+          onSourceSelect={handleSourceChange}
         />
       </div>
 

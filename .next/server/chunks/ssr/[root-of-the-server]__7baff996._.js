@@ -247,10 +247,7 @@ const useMotionCapture = ({ inputSource, videoUrl, captureType, onData })=>{
     const [isCameraOn, setIsCameraOn] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const [isProcessing, setIsProcessing] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const [error, setError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
-    /**
-   * Creates and initializes the MotionLandmarker instance.
-   * This is an asynchronous operation that needs to fetch the model files.
-   */ const createMotionLandmarker = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useCallback"])(async ()=>{
+    const createMotionLandmarker = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useCallback"])(async ()=>{
         try {
             const vision = await __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mediapipe$2f$tasks$2d$vision$2f$vision_bundle$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FilesetResolver"].forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm');
             const landmarker = await __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mediapipe$2f$tasks$2d$vision$2f$vision_bundle$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["MotionLandmarker"].createFromOptions(vision, {
@@ -271,7 +268,6 @@ const useMotionCapture = ({ inputSource, videoUrl, captureType, onData })=>{
             setError('Failed to initialize motion capture model. Please try again.');
         }
     }, []);
-    // Initialize the landmarker when the component mounts.
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         if (!motionLandmarkerRef.current) {
             createMotionLandmarker();
@@ -284,7 +280,7 @@ const useMotionCapture = ({ inputSource, videoUrl, captureType, onData })=>{
             cancelAnimationFrame(animationFrameIdRef.current);
             animationFrameIdRef.current = null;
         }
-        if (videoRef.current && videoRef.current.srcObject) {
+        if (videoRef.current?.srcObject) {
             const stream = videoRef.current.srcObject;
             stream.getTracks().forEach((track)=>track.stop());
             videoRef.current.srcObject = null;
@@ -292,7 +288,6 @@ const useMotionCapture = ({ inputSource, videoUrl, captureType, onData })=>{
         setIsCameraOn(false);
         setIsProcessing(false);
     }, []);
-    // Cleanup on unmount
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         return ()=>{
             stopCapture();
@@ -305,9 +300,7 @@ const useMotionCapture = ({ inputSource, videoUrl, captureType, onData })=>{
         const video = videoRef.current;
         const canvas = canvasRef.current;
         const landmarker = motionLandmarkerRef.current;
-        if (!video || !canvas || !landmarker || video.paused || video.ended) {
-            return;
-        }
+        if (!video || !canvas || !landmarker || video.paused || video.ended) return;
         const currentTime = video.currentTime;
         if (currentTime > lastVideoTimeRef.current) {
             lastVideoTimeRef.current = currentTime;
@@ -318,7 +311,6 @@ const useMotionCapture = ({ inputSource, videoUrl, captureType, onData })=>{
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-                // Draw landmarks based on capture type
                 if (captureType === 'pose' || captureType === 'holistic') {
                     results.poseLandmarks.forEach((landmarks)=>{
                         drawingUtils.drawConnectors(landmarks, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mediapipe$2f$tasks$2d$vision$2f$vision_bundle$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["PoseLandmarker"].POSE_CONNECTIONS, {
@@ -365,7 +357,7 @@ const useMotionCapture = ({ inputSource, videoUrl, captureType, onData })=>{
             return;
         }
         if (isCameraOn) return;
-        stopCapture(); // Ensure previous streams are stopped
+        stopCapture();
         setIsProcessing(true);
         setError(null);
         try {

@@ -11,16 +11,10 @@ import {
   DrawingUtils,
 } from '@mediapipe/tasks-vision';
 import { CaptureType } from '@/components/MotionSelector';
-// import { InputSourceType } from '@/components/InputSelector';
+import { InputSourceType } from '@/components/InputSelector';
 
-/**
- * Re-exporting MotionLandmarkerResult as MotionData for consistency in the app.
- */
 export type MotionData = MotionLandmarkerResult;
 
-/**
- * Props for the useMotionCapture hook.
- */
 interface useMotionCaptureProps {
   inputSource: InputSourceType;
   videoUrl?: string;
@@ -28,11 +22,6 @@ interface useMotionCaptureProps {
   onData: (data: MotionData) => void;
 }
 
-/**
- * A custom hook to manage MediaPipe motion capture from a webcam or video file.
- * It handles the initialization of the MotionLandmarker, manages the video stream,
- * runs the detection loop, and draws the results onto a canvas.
- */
 export const useMotionCapture = ({
   inputSource,
   videoUrl,
@@ -49,10 +38,6 @@ export const useMotionCapture = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Creates and initializes the MotionLandmarker instance.
-   * This is an asynchronous operation that needs to fetch the model files.
-   */
   const createMotionLandmarker = useCallback(async () => {
     try {
       const vision = await FilesetResolver.forVisionTasks(
@@ -77,7 +62,6 @@ export const useMotionCapture = ({
     }
   }, []);
 
-  // Initialize the landmarker when the component mounts.
   useEffect(() => {
     if (!motionLandmarkerRef.current) {
       createMotionLandmarker();
@@ -89,7 +73,7 @@ export const useMotionCapture = ({
       cancelAnimationFrame(animationFrameIdRef.current);
       animationFrameIdRef.current = null;
     }
-    if (videoRef.current && videoRef.current.srcObject) {
+    if (videoRef.current?.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach((track) => track.stop());
       videoRef.current.srcObject = null;
@@ -98,7 +82,6 @@ export const useMotionCapture = ({
     setIsProcessing(false);
   }, []);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopCapture();
@@ -111,9 +94,7 @@ export const useMotionCapture = ({
     const canvas = canvasRef.current;
     const landmarker = motionLandmarkerRef.current;
 
-    if (!video || !canvas || !landmarker || video.paused || video.ended) {
-      return;
-    }
+    if (!video || !canvas || !landmarker || video.paused || video.ended) return;
 
     const currentTime = video.currentTime;
     if (currentTime > lastVideoTimeRef.current) {
@@ -127,24 +108,44 @@ export const useMotionCapture = ({
         canvas.height = video.videoHeight;
         canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Draw landmarks based on capture type
         if (captureType === 'pose' || captureType === 'holistic') {
           results.poseLandmarks.forEach((landmarks) => {
-            drawingUtils.drawConnectors(landmarks, PoseLandmarker.POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
-            drawingUtils.drawLandmarks(landmarks, { color: '#FF0000', radius: 5 });
+            drawingUtils.drawConnectors(
+              landmarks,
+              PoseLandmarker.POSE_CONNECTIONS,
+              { color: '#00FF00', lineWidth: 4 }
+            );
+            drawingUtils.drawLandmarks(
+              landmarks,
+              { color: '#FF0000', radius: 5 }
+            );
           });
         }
+
         if (captureType === 'face' || captureType === 'holistic') {
           results.faceLandmarks.forEach((landmarks) => {
-            drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: '#C0C0C070', lineWidth: 1 });
+            drawingUtils.drawConnectors(
+              landmarks,
+              FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+              { color: '#C0C0C070', lineWidth: 1 }
+            );
           });
         }
+
         if (captureType === 'hands' || captureType === 'holistic') {
           results.handLandmarks.forEach((landmarks) => {
-            drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: '#00CCFF', lineWidth: 5 });
-            drawingUtils.drawLandmarks(landmarks, { color: '#FF0000', radius: 5 });
+            drawingUtils.drawConnectors(
+              landmarks,
+              HandLandmarker.HAND_CONNECTIONS,
+              { color: '#00CCFF', lineWidth: 5 }
+            );
+            drawingUtils.drawLandmarks(
+              landmarks,
+              { color: '#FF0000', radius: 5 }
+            );
           });
         }
+
         onData(results);
       }
     }
@@ -159,7 +160,7 @@ export const useMotionCapture = ({
     }
     if (isCameraOn) return;
 
-    stopCapture(); // Ensure previous streams are stopped
+    stopCapture();
     setIsProcessing(true);
     setError(null);
 
@@ -168,7 +169,10 @@ export const useMotionCapture = ({
       if (!video) return;
 
       if (inputSource === 'webcam') {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480 },
+          audio: false,
+        });
         video.srcObject = stream;
       } else if (inputSource === 'video' && videoUrl) {
         video.src = videoUrl;
@@ -191,5 +195,13 @@ export const useMotionCapture = ({
     }
   }, [isCameraOn, stopCapture, inputSource, videoUrl, predict]);
 
-  return { videoRef, canvasRef, isCameraOn, isProcessing, error, startCapture, stopCapture };
+  return {
+    videoRef,
+    canvasRef,
+    isCameraOn,
+    isProcessing,
+    error,
+    startCapture,
+    stopCapture,
+  };
 };
