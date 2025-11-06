@@ -5,6 +5,7 @@ import WebcamFeed from './WebcamFeed';
 import FaceCropCanvas from './FaceCropCanvas';
 import BabylonViewer from './BabylonViewer';
 import ControlPanel from './ControlPanel';
+import Webcam from 'react-webcam';
 
 export default function FaceTrackerPage() {
   const webcamRef = useRef<HTMLVideoElement | null>(null);
@@ -19,7 +20,7 @@ export default function FaceTrackerPage() {
       <ControlPanel onModeChange={(mode) => setViewMode(mode)} />
 
       {/* Conditional Views */}
-      <div className="mt-6 w-full max-w-3xl">
+      <div className="mt-6 w-full max-w-3xl relative">
         {viewMode === 'webcam' && (
           <WebcamFeed
             onLandmarks={(lm) => setLandmarks(lm)}
@@ -28,7 +29,18 @@ export default function FaceTrackerPage() {
         )}
 
         {viewMode === 'crop' && (
-          <FaceCropCanvas video={webcamRef.current} landmarks={landmarks} />
+          <>
+            <FaceCropCanvas video={webcamRef.current} landmarks={landmarks} />
+
+            {/* Floating Webcam Preview */}
+            <div className="absolute top-4 right-4 w-40 h-28 border border-gray-600 rounded overflow-hidden shadow-lg">
+              <Webcam
+                mirrored
+                audio={false}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </>
         )}
 
         {viewMode === '3d' && <BabylonViewer landmarks={landmarks} />}
