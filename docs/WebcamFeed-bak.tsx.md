@@ -2,16 +2,13 @@
 
 import { useEffect, useRef } from 'react';
 import Webcam from 'react-webcam';
-import { FACEMESH_TESSELATION } from '@mediapipe/face_mesh';
 
 type Props = {
   onLandmarks?: (landmarks: { x: number; y: number }[]) => void;
   onVideoRef?: (video: HTMLVideoElement) => void;
-  showMesh?: boolean;
-  showAxis?: boolean;
 };
 
-export default function WebcamFeed({ onLandmarks, onVideoRef, showMesh = true, showAxis = true }: Props) {
+export default function WebcamFeed({ onLandmarks, onVideoRef }: Props) {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -46,11 +43,8 @@ export default function WebcamFeed({ onLandmarks, onVideoRef, showMesh = true, s
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         if (results.faceLandmarks) {
-          const points = results.faceLandmarks;
-
-          // Draw default dots
           ctx.fillStyle = '#0d00ff';
-          for (const pt of points) {
+          for (const pt of results.faceLandmarks) {
             const x = pt.x * canvas.width;
             const y = pt.y * canvas.height;
             ctx.beginPath();
@@ -58,44 +52,8 @@ export default function WebcamFeed({ onLandmarks, onVideoRef, showMesh = true, s
             ctx.fill();
           }
 
-          // Draw mesh triangles
-          if (showMesh) {
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-            ctx.lineWidth = 0.5;
-            for (const [i1, i2] of FACEMESH_TESSELATION) {
-              const p1 = points[i1];
-              const p2 = points[i2];
-              ctx.beginPath();
-              ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
-              ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
-              ctx.stroke();
-            }
-          }
-
-          // Draw axis markers
-          if (showAxis) {
-            const nose = points[1];
-            const leftEye = points[33];
-            const rightEye = points[263];
-
-            ctx.fillStyle = 'red';
-            ctx.beginPath();
-            ctx.arc(nose.x * canvas.width, nose.y * canvas.height, 3, 0, 2 * Math.PI);
-            ctx.fill();
-
-            ctx.fillStyle = 'green';
-            ctx.beginPath();
-            ctx.arc(leftEye.x * canvas.width, leftEye.y * canvas.height, 3, 0, 2 * Math.PI);
-            ctx.fill();
-
-            ctx.fillStyle = 'blue';
-            ctx.beginPath();
-            ctx.arc(rightEye.x * canvas.width, rightEye.y * canvas.height, 3, 0, 2 * Math.PI);
-            ctx.fill();
-          }
-
           if (onLandmarks) {
-            onLandmarks(points);
+            onLandmarks(results.faceLandmarks);
           }
         }
 
@@ -117,7 +75,7 @@ export default function WebcamFeed({ onLandmarks, onVideoRef, showMesh = true, s
     };
 
     initHolistic();
-  }, [onLandmarks, onVideoRef, showMesh, showAxis]);
+  }, [onLandmarks, onVideoRef]);
 
   return (
     <div className="relative w-full max-w-3xl">
