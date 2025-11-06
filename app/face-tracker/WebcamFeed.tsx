@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import Webcam from 'react-webcam';
 import { Holistic } from '@mediapipe/holistic';
-import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
+import { drawConnectors } from '@mediapipe/drawing_utils';
 import { FACEMESH_TESSELATION } from '@mediapipe/face_mesh';
 
 type Props = {
@@ -45,11 +45,6 @@ export default function WebcamFeed({ onLandmarks, onVideoRef }: Props) {
         drawConnectors(ctx, results.faceLandmarks, FACEMESH_TESSELATION, {
           color: '#00FF00',
           lineWidth: 0.5,
-        });
-
-        drawLandmarks(ctx, results.faceLandmarks, {
-          color: 'red',
-          radius: 1,
         });
 
         if (onLandmarks) {
