@@ -7,6 +7,11 @@ https://github.com/maiChuong/cmpro-gaomotion
 # Website
 https://cmpro-gaomotion.vercel.app/
 
+TODO:
+# upload video for motion capture
+mp4
+# export JSON rotation data
+
 
 # Plan
 

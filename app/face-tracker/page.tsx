@@ -13,6 +13,11 @@ export default function FaceTrackerPage() {
   const [landmarks, setLandmarks] = useState<{ x: number; y: number }[] | null>(null);
   const [viewMode, setViewMode] = useState<'webcam' | 'crop' | '3d'>('webcam');
 
+  // Style toggles
+  const [showDots, setShowDots] = useState(true);
+  const [showMesh, setShowMesh] = useState(true);
+  const [showAxis, setShowAxis] = useState(true);
+
   return (
     <div className="relative w-full h-screen bg-black text-white overflow-hidden">
       {/* Babylon.js background */}
@@ -27,7 +32,13 @@ export default function FaceTrackerPage() {
         <h2 className="text-2xl font-bold mb-4">Face Tracker</h2>
 
         {/* Control Panel */}
-        <ControlPanel onModeChange={(mode) => setViewMode(mode)} />
+        <ControlPanel
+          onModeChange={(mode) => setViewMode(mode)}
+          onStyleChange={({ showMesh, showAxis }) => {
+            setShowMesh(showMesh);
+            setShowAxis(showAxis);
+          }}
+        />
 
         {/* Conditional Views */}
         <div className="mt-6 w-full max-w-3xl relative">
@@ -35,6 +46,9 @@ export default function FaceTrackerPage() {
             <WebcamFeed
               onLandmarks={(lm) => setLandmarks(lm)}
               onVideoRef={(video) => (webcamRef.current = video)}
+              showDots={showDots}
+              showMesh={showMesh}
+              showAxis={showAxis}
             />
           )}
 

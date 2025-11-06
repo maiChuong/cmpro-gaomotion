@@ -2,16 +2,26 @@
 
 import { useEffect, useRef } from 'react';
 import Webcam from 'react-webcam';
-import { FACEMESH_TESSELATION } from '@mediapipe/face_mesh';
+import { FACEMESH_TESSELATION } from './faceMeshTesselation';
+import { FACEMESH_CONTOURS } from './faceMeshContours';
 
 type Props = {
   onLandmarks?: (landmarks: { x: number; y: number }[]) => void;
   onVideoRef?: (video: HTMLVideoElement) => void;
+  showDots?: boolean;
   showMesh?: boolean;
   showAxis?: boolean;
+  showContours?: boolean;
 };
 
-export default function WebcamFeed({ onLandmarks, onVideoRef, showMesh = true, showAxis = true }: Props) {
+export default function WebcamFeed({
+  onLandmarks,
+  onVideoRef,
+  showDots = true,
+  showMesh = false,
+  showAxis = false,
+  showContours = false,
+}: Props) {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -48,17 +58,19 @@ export default function WebcamFeed({ onLandmarks, onVideoRef, showMesh = true, s
         if (results.faceLandmarks) {
           const points = results.faceLandmarks;
 
-          // Draw default dots
-          ctx.fillStyle = '#0d00ff';
-          for (const pt of points) {
-            const x = pt.x * canvas.width;
-            const y = pt.y * canvas.height;
-            ctx.beginPath();
-            ctx.arc(x, y, 1.5, 0, 2 * Math.PI);
-            ctx.fill();
+          // Dots
+          if (showDots) {
+            ctx.fillStyle = '#0d00ff';
+            for (const pt of points) {
+              const x = pt.x * canvas.width;
+              const y = pt.y * canvas.height;
+              ctx.beginPath();
+              ctx.arc(x, y, 1.5, 0, 2 * Math.PI);
+              ctx.fill();
+            }
           }
 
-          // Draw mesh triangles
+          // Mesh
           if (showMesh) {
             ctx.strokeStyle = 'rgba(255,255,255,0.3)';
             ctx.lineWidth = 0.5;
@@ -72,7 +84,7 @@ export default function WebcamFeed({ onLandmarks, onVideoRef, showMesh = true, s
             }
           }
 
-          // Draw axis markers
+          // Axis markers
           if (showAxis) {
             const nose = points[1];
             const leftEye = points[33];
@@ -92,6 +104,20 @@ export default function WebcamFeed({ onLandmarks, onVideoRef, showMesh = true, s
             ctx.beginPath();
             ctx.arc(rightEye.x * canvas.width, rightEye.y * canvas.height, 3, 0, 2 * Math.PI);
             ctx.fill();
+          }
+
+          // Contours
+          if (showContours) {
+            ctx.strokeStyle = 'lime';
+            ctx.lineWidth = 1.5;
+            for (const [i1, i2] of FACEMESH_CONTOURS) {
+              const p1 = points[i1];
+              const p2 = points[i2];
+              ctx.beginPath();
+              ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
+              ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
+              ctx.stroke();
+            }
           }
 
           if (onLandmarks) {
@@ -117,7 +143,7 @@ export default function WebcamFeed({ onLandmarks, onVideoRef, showMesh = true, s
     };
 
     initHolistic();
-  }, [onLandmarks, onVideoRef, showMesh, showAxis]);
+  }, [onLandmarks, onVideoRef, showDots, showMesh, showAxis, showContours]);
 
   return (
     <div className="relative w-full max-w-3xl">
