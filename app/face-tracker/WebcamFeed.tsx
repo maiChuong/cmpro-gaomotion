@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react';
 import Webcam from 'react-webcam';
-import '@mediapipe/holistic';
 
 type Props = {
   onLandmarks?: (landmarks: { x: number; y: number }[]) => void;
@@ -14,55 +13,57 @@ export default function WebcamFeed({ onLandmarks, onVideoRef }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const holistic = new (window as any).Holistic({
-      locateFile: (file: string) =>
-        `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`,
-    });
+    const initHolistic = async () => {
+      const mpHolistic = await import('@mediapipe/holistic');
+      const mpCamera = await import('@mediapipe/camera_utils');
 
-    holistic.setOptions({
-      modelComplexity: 1,
-      smoothLandmarks: true,
-      enableSegmentation: false,
-      refineFaceLandmarks: true,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-    });
+      const holistic = new mpHolistic.Holistic({
+        locateFile: (file: string) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`,
+      });
 
-    holistic.onResults((results: any) => {
-      const canvas = canvasRef.current!;
-      const ctx = canvas.getContext('2d')!;
-      const video = webcamRef.current?.video!;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      holistic.setOptions({
+        modelComplexity: 1,
+        smoothLandmarks: true,
+        enableSegmentation: false,
+        refineFaceLandmarks: true,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
 
-      ctx.save();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      holistic.onResults((results: any) => {
+        const canvas = canvasRef.current!;
+        const ctx = canvas.getContext('2d')!;
+        const video = webcamRef.current?.video!;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
 
-      if (results.faceLandmarks) {
-        ctx.fillStyle = 'red';
-        for (const pt of results.faceLandmarks) {
-          const x = pt.x * canvas.width;
-          const y = pt.y * canvas.height;
-          ctx.beginPath();
-          ctx.arc(x, y, 1.5, 0, 2 * Math.PI);
-          ctx.fill();
+        ctx.save();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        if (results.faceLandmarks) {
+          ctx.fillStyle = 'red';
+          for (const pt of results.faceLandmarks) {
+            const x = pt.x * canvas.width;
+            const y = pt.y * canvas.height;
+            ctx.beginPath();
+            ctx.arc(x, y, 1.5, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+
+          if (onLandmarks) {
+            onLandmarks(results.faceLandmarks);
+          }
         }
 
-        if (onLandmarks) {
-          onLandmarks(results.faceLandmarks);
-        }
-      }
+        ctx.restore();
+      });
 
-      ctx.restore();
-    });
-
-    const startHolistic = async () => {
-      const camera = await import('@mediapipe/camera_utils');
       const videoElement = webcamRef.current?.video!;
       if (onVideoRef) onVideoRef(videoElement);
 
-      const cam = new camera.Camera(videoElement, {
+      const camera = new mpCamera.Camera(videoElement, {
         onFrame: async () => {
           await holistic.send({ image: videoElement });
         },
@@ -70,10 +71,10 @@ export default function WebcamFeed({ onLandmarks, onVideoRef }: Props) {
         height: 480,
       });
 
-      cam.start();
+      camera.start();
     };
 
-    startHolistic();
+    initHolistic();
   }, [onLandmarks, onVideoRef]);
 
   return (
