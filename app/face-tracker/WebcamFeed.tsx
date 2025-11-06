@@ -43,7 +43,7 @@ export default function WebcamFeed({ onLandmarks, onVideoRef }: Props) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         if (results.faceLandmarks) {
-          ctx.fillStyle = 'red';
+          ctx.fillStyle = '#0d00ff';
           for (const pt of results.faceLandmarks) {
             const x = pt.x * canvas.width;
             const y = pt.y * canvas.height;

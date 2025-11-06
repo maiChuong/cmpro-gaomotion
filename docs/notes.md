@@ -1,7 +1,14 @@
+# Vercel
 https://vercel.com/chuong-mais-projects/cmpro-gaomotion
 
-
+# Repo
 https://github.com/maiChuong/cmpro-gaomotion
+
+# Website
+https://cmpro-gaomotion.vercel.app/
+
+
+# Plan
 
  tree -L 3 -I 'node_modules|.git|dist' | pbcopy
 .
