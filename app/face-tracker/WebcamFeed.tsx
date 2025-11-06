@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Webcam from 'react-webcam';
-import { Holistic } from '@mediapipe/holistic';
+import '@mediapipe/holistic';
 
 type Props = {
   onLandmarks?: (landmarks: { x: number; y: number }[]) => void;
@@ -14,8 +14,8 @@ export default function WebcamFeed({ onLandmarks, onVideoRef }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const holistic = new Holistic({
-      locateFile: (file) =>
+    const holistic = new (window as any).Holistic({
+      locateFile: (file: string) =>
         `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`,
     });
 
@@ -28,7 +28,7 @@ export default function WebcamFeed({ onLandmarks, onVideoRef }: Props) {
       minTrackingConfidence: 0.5,
     });
 
-    holistic.onResults((results) => {
+    holistic.onResults((results: any) => {
       const canvas = canvasRef.current!;
       const ctx = canvas.getContext('2d')!;
       const video = webcamRef.current?.video!;
