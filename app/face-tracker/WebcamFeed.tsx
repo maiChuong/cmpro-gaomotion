@@ -6,7 +6,7 @@ import { FACEMESH_TESSELATION } from './faceMeshTesselation';
 import { FACEMESH_CONTOURS } from './faceMeshContours';
 
 type Props = {
-  onLandmarks?: (landmarks: { x: number; y: number }[]) => void;
+  onLandmarks?: (landmarks: { x: number; y: number; z?: number }[]) => void;
   onVideoRef?: (video: HTMLVideoElement) => void;
   showDots?: boolean;
   showMesh?: boolean;
@@ -26,25 +26,23 @@ export default function WebcamFeed({
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const initHolistic = async () => {
-      const { Holistic } = await import('@mediapipe/holistic');
+    const initFaceMesh = async () => {
+      const { FaceMesh } = await import('@mediapipe/face_mesh');
       const { Camera } = await import('@mediapipe/camera_utils');
 
-      const holistic = new Holistic({
+      const faceMesh = new FaceMesh({
         locateFile: (file) =>
-          `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`,
+          `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
       });
 
-      holistic.setOptions({
-        modelComplexity: 1,
-        smoothLandmarks: true,
-        enableSegmentation: false,
-        refineFaceLandmarks: true,
+      faceMesh.setOptions({
+        maxNumFaces: 1,
+        refineLandmarks: true,
         minDetectionConfidence: 0.5,
         minTrackingConfidence: 0.5,
       });
 
-      holistic.onResults((results) => {
+      faceMesh.onResults((results) => {
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext('2d');
         const video = webcamRef.current?.video;
@@ -57,7 +55,7 @@ export default function WebcamFeed({
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const points = results.faceLandmarks;
+        const points = results.multiFaceLandmarks?.[0];
         if (points?.length) {
           // Dots
           if (showDots) {
@@ -128,7 +126,7 @@ export default function WebcamFeed({
 
       const camera = new Camera(videoElement!, {
         onFrame: async () => {
-          await holistic.send({ image: videoElement! });
+          await faceMesh.send({ image: videoElement! });
         },
         width: 640,
         height: 480,
@@ -137,14 +135,14 @@ export default function WebcamFeed({
       camera.start();
     };
 
-    initHolistic();
+    initFaceMesh();
   }, [onLandmarks, onVideoRef, showDots, showMesh, showAxis, showContours]);
 
   return (
     <div className="relative w-full max-w-3xl">
       <Webcam
         ref={webcamRef}
-        mirrored
+        mirrored={false}
         style={{
           position: 'absolute',
           top: 0,
