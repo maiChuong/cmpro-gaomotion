@@ -16,9 +16,7 @@ import {
   VertexBuffer,
 } from '@babylonjs/core';
 import '@babylonjs/loaders';
-import { FACEMESH_TESSELATION } from './faceMeshTesselation3d';
 import { FACEMESH_SIMPLIFIED } from './faceMeshSimplified';
-
 
 type Props = {
   landmarks: { x: number; y: number; z?: number }[] | null;
@@ -40,7 +38,7 @@ export default function BabylonViewer({ landmarks }: Props) {
     sceneRef.current = scene;
 
     // Camera
-    const camera = new ArcRotateCamera('camera', Math.PI / 2, Math.PI / 2.5, 3, Vector3.Zero(), scene);
+    const camera = new ArcRotateCamera('camera', Math.PI / 2, Math.PI / 2.5, 6, new Vector3(0, 1.5, 0), scene);
     camera.attachControl(canvas, true);
 
     // Lighting
@@ -49,27 +47,24 @@ export default function BabylonViewer({ landmarks }: Props) {
 
     // Background and ground
     scene.clearColor = new Color3(0.1, 0.4, 0.1).toColor4();
-    MeshBuilder.CreateGround('ground', { width: 10, height: 10 }, scene);
+
+    const ground = MeshBuilder.CreateGround('ground', { width: 10, height: 10 }, scene);
+    const groundMaterial = new StandardMaterial('groundMat', scene);
+    groundMaterial.diffuseTexture = new Texture('/texture/platform.png', scene);
+    groundMaterial.specularColor = new Color3(0, 0, 0);
+    ground.material = groundMaterial;
 
     // Face mesh
     const mesh = new Mesh('faceMesh', scene);
     meshRef.current = mesh;
 
-    // Create ground with texture
-    const ground = MeshBuilder.CreateGround('ground', { width: 10, height: 10 }, scene);
-
-    const groundMaterial = new StandardMaterial('groundMat', scene);
-    groundMaterial.diffuseTexture = new Texture('/texture/platform.png', scene);
-    groundMaterial.specularColor = new Color3(0, 0, 0); // remove shine
-    ground.material = groundMaterial;
-    
-
     const material = new StandardMaterial('faceMat', scene);
     material.diffuseColor = new Color3(0.8, 0.6, 0.5);
-    // Optional texture support:
-    // material.diffuseTexture = new Texture('/face_texture.png', scene);
     material.backFaceCulling = false;
     mesh.material = material;
+
+    // Position mesh above ground
+    mesh.position.y = 1.5;
 
     engine.runRenderLoop(() => {
       scene.render();
@@ -87,13 +82,12 @@ export default function BabylonViewer({ landmarks }: Props) {
   useEffect(() => {
     if (!landmarks || !meshRef.current) return;
 
-    const scale = 2;
+    const scale = 4; // ✅ Triple the original scale (was 2)
     const positions = landmarks.map((pt) =>
       new Vector3((pt.x - 0.5) * scale, -(pt.y - 0.5) * scale, -(pt.z ?? 0) * scale)
     );
 
     const flatPositions = positions.flatMap((v) => [v.x, v.y, v.z]);
-    // const indices = FACEMESH_TESSELATION.flatMap(([a, b, c]) => [a, b, c]);
     const indices = FACEMESH_SIMPLIFIED.flatMap(([a, b, c]) => [a, b, c]);
 
     const normals: number[] = [];

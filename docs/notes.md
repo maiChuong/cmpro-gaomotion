@@ -12,6 +12,8 @@ TODO:
 mp4
 # export JSON rotation data
 
+# Repo reference
+https://github.com/imerso/facecap/blob/main/modules/webcam.js
 
 # Plan
 

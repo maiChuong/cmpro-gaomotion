@@ -9,7 +9,7 @@ Citation: If you use this project in your research, please cite the original wor
 Commercial Use Restriction
 For any commercial use inquiries or to obtain a commercial license, please contact the author at [C.Note](https://maichuong.github.io/cmpro-note/)
 
-# Gaomotion
+# Gao Motion
 Mediapipe application
 Facial recognition
 
