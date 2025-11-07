@@ -27,11 +27,11 @@ export default function WebcamFeed({
 
   useEffect(() => {
     const initHolistic = async () => {
-      const mpHolistic = await import('@mediapipe/holistic');
-      const mpCamera = await import('@mediapipe/camera_utils');
+      const { Holistic } = await import('@mediapipe/holistic');
+      const { Camera } = await import('@mediapipe/camera_utils');
 
-      const holistic = new mpHolistic.Holistic({
-        locateFile: (file: string) =>
+      const holistic = new Holistic({
+        locateFile: (file) =>
           `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`,
       });
 
@@ -44,10 +44,12 @@ export default function WebcamFeed({
         minTrackingConfidence: 0.5,
       });
 
-      holistic.onResults((results: any) => {
-        const canvas = canvasRef.current!;
-        const ctx = canvas.getContext('2d')!;
-        const video = webcamRef.current?.video!;
+      holistic.onResults((results) => {
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext('2d');
+        const video = webcamRef.current?.video;
+        if (!canvas || !ctx || !video) return;
+
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
@@ -55,33 +57,32 @@ export default function WebcamFeed({
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        if (results.faceLandmarks) {
-          const points = results.faceLandmarks;
-
+        const points = results.faceLandmarks;
+        if (points?.length) {
           // Dots
           if (showDots) {
             ctx.fillStyle = '#0d00ff';
-            for (const pt of points) {
+            points.forEach((pt) => {
               const x = pt.x * canvas.width;
               const y = pt.y * canvas.height;
               ctx.beginPath();
               ctx.arc(x, y, 1.5, 0, 2 * Math.PI);
               ctx.fill();
-            }
+            });
           }
 
           // Mesh
           if (showMesh) {
             ctx.strokeStyle = 'rgba(255,255,255,0.3)';
             ctx.lineWidth = 0.5;
-            for (const [i1, i2] of FACEMESH_TESSELATION) {
+            FACEMESH_TESSELATION.forEach(([i1, i2]) => {
               const p1 = points[i1];
               const p2 = points[i2];
               ctx.beginPath();
               ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
               ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
               ctx.stroke();
-            }
+            });
           }
 
           // Axis markers
@@ -90,50 +91,44 @@ export default function WebcamFeed({
             const leftEye = points[33];
             const rightEye = points[263];
 
-            ctx.fillStyle = 'red';
-            ctx.beginPath();
-            ctx.arc(nose.x * canvas.width, nose.y * canvas.height, 3, 0, 2 * Math.PI);
-            ctx.fill();
+            const drawMarker = (pt: any, color: string) => {
+              ctx.fillStyle = color;
+              ctx.beginPath();
+              ctx.arc(pt.x * canvas.width, pt.y * canvas.height, 3, 0, 2 * Math.PI);
+              ctx.fill();
+            };
 
-            ctx.fillStyle = 'green';
-            ctx.beginPath();
-            ctx.arc(leftEye.x * canvas.width, leftEye.y * canvas.height, 3, 0, 2 * Math.PI);
-            ctx.fill();
-
-            ctx.fillStyle = 'blue';
-            ctx.beginPath();
-            ctx.arc(rightEye.x * canvas.width, rightEye.y * canvas.height, 3, 0, 2 * Math.PI);
-            ctx.fill();
+            drawMarker(nose, 'red');
+            drawMarker(leftEye, 'green');
+            drawMarker(rightEye, 'blue');
           }
 
           // Contours
           if (showContours) {
             ctx.strokeStyle = 'lime';
             ctx.lineWidth = 1.5;
-            for (const [i1, i2] of FACEMESH_CONTOURS) {
+            FACEMESH_CONTOURS.forEach(([i1, i2]) => {
               const p1 = points[i1];
               const p2 = points[i2];
               ctx.beginPath();
               ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
               ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
               ctx.stroke();
-            }
+            });
           }
 
-          if (onLandmarks) {
-            onLandmarks(points);
-          }
+          onLandmarks?.(points);
         }
 
         ctx.restore();
       });
 
-      const videoElement = webcamRef.current?.video!;
-      if (onVideoRef) onVideoRef(videoElement);
+      const videoElement = webcamRef.current?.video;
+      if (videoElement && onVideoRef) onVideoRef(videoElement);
 
-      const camera = new mpCamera.Camera(videoElement, {
+      const camera = new Camera(videoElement!, {
         onFrame: async () => {
-          await holistic.send({ image: videoElement });
+          await holistic.send({ image: videoElement! });
         },
         width: 640,
         height: 480,

@@ -6,75 +6,85 @@ import {
   Scene,
   ArcRotateCamera,
   HemisphericLight,
-  MeshBuilder,
   Vector3,
+  Mesh,
+  MeshBuilder,
   StandardMaterial,
   Color3,
-  Mesh,
+  VertexData,
+  VertexBuffer,
 } from '@babylonjs/core';
 import '@babylonjs/loaders';
+import { FACEMESH_TESSELATION } from './faceMeshTesselation';
 
 type Props = {
-  landmarks: { x: number; y: number }[] | null;
+  landmarks: { x: number; y: number; z?: number }[] | null;
 };
 
 export default function BabylonViewer({ landmarks }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const headRef = useRef<Mesh | null>(null);
+  const engineRef = useRef<Engine | null>(null);
+  const sceneRef = useRef<Scene | null>(null);
+  const meshRef = useRef<Mesh | null>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current!;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const engine = new Engine(canvas, true);
     const scene = new Scene(engine);
+    engineRef.current = engine;
+    sceneRef.current = scene;
 
     // Camera
-    const camera = new ArcRotateCamera('camera', Math.PI / 2, Math.PI / 2.5, 2, Vector3.Zero(), scene);
+    const camera = new ArcRotateCamera('camera', Math.PI / 2, Math.PI / 2.5, 3, Vector3.Zero(), scene);
     camera.attachControl(canvas, true);
 
-    // Light
+    // Lighting
     const light = new HemisphericLight('light', new Vector3(0, 1, 0), scene);
     light.intensity = 0.9;
 
-    // Head Mesh (placeholder sphere)
-    const head = MeshBuilder.CreateSphere('head', { diameter: 1 }, scene);
-    head.position.y = 0.5;
-    headRef.current = head;
+    // Initial empty mesh
+    const mesh = new Mesh('faceMesh', scene);
+    meshRef.current = mesh;
 
-    const material = new StandardMaterial('headMat', scene);
-    material.diffuseColor = new Color3(0.8, 0.6, 0.5);
-    head.material = material;
+    const material = new StandardMaterial('wireMat', scene);
+    material.diffuseColor = new Color3(0.2, 0.8, 1);
+    material.wireframe = true;
+    mesh.material = material;
 
-    // Animation loop
     engine.runRenderLoop(() => {
-      if (landmarks && landmarks.length > 0) {
-        const leftEye = landmarks[33];   // Approximate left eye
-        const rightEye = landmarks[263]; // Approximate right eye
-        const noseTip = landmarks[1];    // Nose tip
-
-        const dx = rightEye.x - leftEye.x;
-        const dy = noseTip.y - 0.5;
-
-        head.rotation.y = dx * 2; // Horizontal tilt
-        head.rotation.x = dy * 2; // Vertical tilt
-      } else {
-        head.rotation.y += 0.005; // Idle rotation
-      }
-
       scene.render();
     });
 
-    window.addEventListener('resize', () => engine.resize());
+    const handleResize = () => engine.resize();
+    window.addEventListener('resize', handleResize);
 
     return () => {
+      window.removeEventListener('resize', handleResize);
       engine.dispose();
-      window.removeEventListener('resize', () => engine.resize());
     };
+  }, []);
+
+  useEffect(() => {
+    if (!landmarks || !sceneRef.current || !meshRef.current) return;
+
+    const scale = 2;
+    const positions = landmarks.map((pt) =>
+      new Vector3((pt.x - 0.5) * scale, -(pt.y - 0.5) * scale, -(pt.z ?? 0) * scale)
+    );
+
+    const vertexData = new VertexData();
+    vertexData.positions = positions.flatMap((v) => [v.x, v.y, v.z]);
+    vertexData.indices = FACEMESH_TESSELATION.flatMap(([a, b]) => [a, b]);
+
+    vertexData.applyToMesh(meshRef.current, true);
   }, [landmarks]);
 
   return (
-    <div className="mt-6 w-full max-w-3xl">
-      <h3 className="text-white text-lg mb-2">3D Head Model</h3>
-      <canvas ref={canvasRef} className="w-full h-[400px] border border-gray-700 rounded" />
-    </div>
+    <canvas
+      ref={canvasRef}
+      className="w-full h-full absolute inset-0"
+    />
   );
 }

@@ -1,3 +1,4 @@
+// Facial mesh connections for drawing triangle-based topology across the face
 export const FACEMESH_TESSELATION: [number, number][] = [
   [127, 34], [34, 139], [139, 127], [11, 0], [0, 37], [37, 11],
   [232, 231], [231, 120], [120, 232], [72, 37], [37, 39], [39, 72],

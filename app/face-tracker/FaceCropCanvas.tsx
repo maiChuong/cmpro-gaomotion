@@ -11,19 +11,22 @@ export default function FaceCropCanvas({ video, landmarks }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (!video || !landmarks || landmarks.length === 0) return;
+    if (!video || !landmarks?.length) return;
 
-    const canvas = canvasRef.current!;
-    const ctx = canvas.getContext('2d')!;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    const { videoWidth: vw, videoHeight: vh } = video;
+    canvas.width = vw;
+    canvas.height = vh;
 
     // Draw full video frame
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, 0, 0, vw, vh);
 
-    // Calculate bounding box from landmarks
-    const xs = landmarks.map((pt) => pt.x * canvas.width);
-    const ys = landmarks.map((pt) => pt.y * canvas.height);
+    // Calculate bounding box
+    const xs = landmarks.map((pt) => pt.x * vw);
+    const ys = landmarks.map((pt) => pt.y * vh);
     const minX = Math.min(...xs);
     const maxX = Math.max(...xs);
     const minY = Math.min(...ys);
@@ -32,11 +35,8 @@ export default function FaceCropCanvas({ video, landmarks }: Props) {
     const width = maxX - minX;
     const height = maxY - minY;
 
-    // Crop face region
+    // Crop and redraw face region
     const faceImage = ctx.getImageData(minX, minY, width, height);
-
-    // Clear canvas and draw cropped face
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
     canvas.width = width;
     canvas.height = height;
     ctx.putImageData(faceImage, 0, 0);

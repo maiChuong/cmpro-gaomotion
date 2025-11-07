@@ -13,67 +13,58 @@ export default function FaceTrackerPage() {
   const [landmarks, setLandmarks] = useState<{ x: number; y: number }[] | null>(null);
   const [viewMode, setViewMode] = useState<'webcam' | 'crop' | '3d'>('webcam');
 
-  // Style toggles
   const [showDots, setShowDots] = useState(true);
   const [showMesh, setShowMesh] = useState(true);
   const [showAxis, setShowAxis] = useState(true);
+  const [showContours, setShowContours] = useState(false);
 
   return (
-    <div className="relative w-full h-screen bg-black text-white overflow-hidden">
+    <div className="fixed inset-0 bg-black text-white overflow-hidden">
       {/* Babylon.js background */}
+      <BabylonViewer landmarks={landmarks} />
+
+      {/* Floating webcam preview */}
+      <motion.div
+        drag
+        dragConstraints={{ top: 0, left: 0, right: 1000, bottom: 1000 }}
+        className="absolute bottom-4 right-4 w-80 h-44 border border-gray-700 rounded overflow-hidden shadow-lg z-20 cursor-move"
+      >
+        <Webcam mirrored audio={false} className="w-full h-full object-cover" />
+      </motion.div>
+
+      {/* Floating control panel */}
+      <div className="absolute top-6 left-6 z-30 bg-black bg-opacity-70 p-4 rounded-lg border border-gray-700 max-w-md">
+        <h2 className="text-xl font-bold mb-4">Face Tracker</h2>
+        <ControlPanel
+          onModeChange={setViewMode}
+          onStyleChange={({ showDots, showMesh, showAxis, showContours }) => {
+            setShowDots(showDots);
+            setShowMesh(showMesh);
+            setShowAxis(showAxis);
+            setShowContours(showContours);
+          }}
+        />
+      </div>
+
+      {/* Conditional overlays */}
       {viewMode === 'webcam' && (
-        <div className="absolute inset-0 z-0">
-          <BabylonViewer landmarks={landmarks} />
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          <WebcamFeed
+            onLandmarks={setLandmarks}
+            onVideoRef={(video) => (webcamRef.current = video)}
+            showDots={showDots}
+            showMesh={showMesh}
+            showAxis={showAxis}
+            showContours={showContours}
+          />
         </div>
       )}
 
-      {/* Foreground UI */}
-      <div className="relative z-10 flex flex-col items-center justify-start pt-6 px-4 h-full">
-        <h2 className="text-2xl font-bold mb-4">Face Tracker</h2>
-
-        {/* Control Panel */}
-        <ControlPanel
-          onModeChange={(mode) => setViewMode(mode)}
-          onStyleChange={({ showMesh, showAxis }) => {
-            setShowMesh(showMesh);
-            setShowAxis(showAxis);
-          }}
-        />
-
-        {/* Conditional Views */}
-        <div className="mt-6 w-full max-w-3xl relative">
-          {viewMode === 'webcam' && (
-            <WebcamFeed
-              onLandmarks={(lm) => setLandmarks(lm)}
-              onVideoRef={(video) => (webcamRef.current = video)}
-              showDots={showDots}
-              showMesh={showMesh}
-              showAxis={showAxis}
-            />
-          )}
-
-          {viewMode === 'crop' && (
-            <>
-              <FaceCropCanvas video={webcamRef.current} landmarks={landmarks} />
-
-              {/* Floating Webcam Preview */}
-              <motion.div
-                drag
-                dragConstraints={{ top: 0, left: 0, right: 300, bottom: 500 }}
-                className="absolute top-4 right-4 w-40 h-28 border border-gray-600 rounded overflow-hidden shadow-lg cursor-move z-20"
-              >
-                <Webcam
-                  mirrored
-                  audio={false}
-                  className="w-full h-full object-cover"
-                />
-              </motion.div>
-            </>
-          )}
-
-          {viewMode === '3d' && <BabylonViewer landmarks={landmarks} />}
+      {viewMode === 'crop' && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center">
+          <FaceCropCanvas video={webcamRef.current} landmarks={landmarks} />
         </div>
-      </div>
+      )}
     </div>
   );
 }

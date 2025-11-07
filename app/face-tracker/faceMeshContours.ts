@@ -1,3 +1,4 @@
+// Facial contour connections for drawing outlines around key regions
 export const FACEMESH_CONTOURS: [number, number][] = [
   // Jawline
   [10, 338], [338, 297], [297, 332], [332, 284], [284, 251], [251, 389],
