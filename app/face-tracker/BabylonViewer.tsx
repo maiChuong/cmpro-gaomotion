@@ -17,6 +17,8 @@ import {
 } from '@babylonjs/core';
 import '@babylonjs/loaders';
 import { FACEMESH_TESSELATION } from './faceMeshTesselation3d';
+import { FACEMESH_SIMPLIFIED } from './faceMeshSimplified';
+
 
 type Props = {
   landmarks: { x: number; y: number; z?: number }[] | null;
@@ -91,7 +93,8 @@ export default function BabylonViewer({ landmarks }: Props) {
     );
 
     const flatPositions = positions.flatMap((v) => [v.x, v.y, v.z]);
-    const indices = FACEMESH_TESSELATION.flatMap(([a, b, c]) => [a, b, c]);
+    // const indices = FACEMESH_TESSELATION.flatMap(([a, b, c]) => [a, b, c]);
+    const indices = FACEMESH_SIMPLIFIED.flatMap(([a, b, c]) => [a, b, c]);
 
     const normals: number[] = [];
     VertexData.ComputeNormals(flatPositions, indices, normals);

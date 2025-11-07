@@ -61,3 +61,4 @@ mp4
 │   └── notes.md
 
 
+node scripts/convert-draw-list.js > faceMeshSimplified.ts
