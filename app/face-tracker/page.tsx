@@ -48,7 +48,7 @@ export default function FaceTrackerPage() {
         {/* Original Webcam (flipped vertically) */}
         <div className="w-64 h-36 border border-gray-700 rounded overflow-hidden shadow-lg">
           <Webcam
-            mirrored={false}
+            mirrored={true}
             audio={false}
             className="w-full h-full object-cover"
             style={{ transform: 'scaleX(-1)' }}

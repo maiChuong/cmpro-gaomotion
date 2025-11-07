@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Webcam from 'react-webcam';
+import { FACEMESH_TESSELATION } from './faceMeshTesselation';
 import { FACEMESH_CONTOURS } from './faceMeshContours';
 
 type Props = {
@@ -11,7 +12,6 @@ type Props = {
   showMesh?: boolean;
   showAxis?: boolean;
   showContours?: boolean;
-  showTexture?: boolean;
 };
 
 export default function WebcamFeed({
@@ -21,20 +21,9 @@ export default function WebcamFeed({
   showMesh = false,
   showAxis = false,
   showContours = false,
-  showTexture = true,
 }: Props) {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const textureRef = useRef<HTMLImageElement | null>(null);
-
-  useEffect(() => {
-    // Load texture image
-    const img = new Image();
-    img.src = '/texture/sample-face.png';
-    img.onload = () => {
-      textureRef.current = img;
-    };
-  }, []);
 
   useEffect(() => {
     const initFaceMesh = async () => {
@@ -68,28 +57,6 @@ export default function WebcamFeed({
 
         const points = results.multiFaceLandmarks?.[0];
         if (points?.length) {
-          // Overlay texture
-          if (showTexture && textureRef.current) {
-            const nose = points[1];
-            const leftCheek = points[234];
-            const rightCheek = points[454];
-
-            const faceWidth = Math.abs(rightCheek.x - leftCheek.x) * canvas.width;
-            const faceHeight = faceWidth * 1.2;
-            const centerX = nose.x * canvas.width;
-            const centerY = nose.y * canvas.height;
-
-            ctx.globalAlpha = 0.6;
-            ctx.drawImage(
-              textureRef.current,
-              centerX - faceWidth / 2,
-              centerY - faceHeight / 2,
-              faceWidth,
-              faceHeight
-            );
-            ctx.globalAlpha = 1.0;
-          }
-
           // Dots
           if (showDots) {
             ctx.fillStyle = '#0d00ff';
@@ -99,6 +66,20 @@ export default function WebcamFeed({
               ctx.beginPath();
               ctx.arc(x, y, 1.5, 0, 2 * Math.PI);
               ctx.fill();
+            });
+          }
+
+          // Mesh
+          if (showMesh) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 0.5;
+            FACEMESH_TESSELATION.forEach(([i1, i2]) => {
+              const p1 = points[i1];
+              const p2 = points[i2];
+              ctx.beginPath();
+              ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
+              ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
+              ctx.stroke();
             });
           }
 
@@ -155,7 +136,7 @@ export default function WebcamFeed({
     };
 
     initFaceMesh();
-  }, [onLandmarks, onVideoRef, showDots, showMesh, showAxis, showContours, showTexture]);
+  }, [onLandmarks, onVideoRef, showDots, showMesh, showAxis, showContours]);
 
   return (
     <div className="relative w-full max-w-3xl">
