@@ -57,7 +57,7 @@ export default function BabylonViewer({ landmarks }: Props) {
     const ground = MeshBuilder.CreateGround('ground', { width: 10, height: 10 }, scene);
 
     const groundMaterial = new StandardMaterial('groundMat', scene);
-    groundMaterial.diffuseTexture = new Texture('/texture/terracota.jpg', scene);
+    groundMaterial.diffuseTexture = new Texture('/texture/platform.png', scene);
     groundMaterial.specularColor = new Color3(0, 0, 0); // remove shine
     ground.material = groundMaterial;
     

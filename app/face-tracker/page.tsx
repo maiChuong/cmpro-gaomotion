@@ -51,9 +51,10 @@ export default function FaceTrackerPage() {
             mirrored={false}
             audio={false}
             className="w-full h-full object-cover"
-            style={{ transform: 'scaleY(-1)' }}
+            style={{ transform: 'scaleX(-1)' }}
           />
         </div>
+
 
         {/* Facial Tracker */}
         {viewMode !== '3d' && (
