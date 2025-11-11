@@ -15,6 +15,11 @@ export default function HomePage() {
       >
         Launch Face Tracker
       </Link>
+      <Link href="/object-detection">
+        <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          Go to Object Detection
+        </button>
+      </Link>      
     </main>
   );
 }
