@@ -8,8 +8,10 @@ import '@tensorflow/tfjs';
 export default function ObjectDetectionPage() {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [labels, setLabels] = useState<string[]>([]);
   const [model, setModel] = useState<cocoSsd.ObjectDetection | null>(null);
+  const [labels, setLabels] = useState<string[]>([]);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [description, setDescription] = useState<string>('No snapshot captured yet.');
 
   useEffect(() => {
     const loadModel = async () => {
@@ -53,13 +55,31 @@ export default function ObjectDetectionPage() {
     return () => clearInterval(interval);
   }, [model]);
 
+  const captureSnapshot = async () => {
+    const imageSrc = webcamRef.current?.getScreenshot();
+    if (!imageSrc) return;
+
+    setCapturedImage(imageSrc);
+    setDescription('Analyzing image...');
+
+    try {
+      // @ts-ignore – assuming Puter AI JS/v2 is globally available
+      const result = await window.puter.ai.describeImage(imageSrc);
+      setDescription(result.description || 'No description returned.');
+    } catch (err) {
+      setDescription('Failed to analyze image.');
+      console.error(err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Object Detection (TensorFlow.js)</h1>
+      <h1 className="text-3xl font-bold mb-6">Object Detection (Snapshot + AI Description)</h1>
 
-      <div className="relative w-full max-w-3xl aspect-video mb-6">
+      <div className="relative w-full max-w-3xl aspect-video mb-4">
         <Webcam
           ref={webcamRef}
+          screenshotFormat="image/jpeg"
           style={{
             position: 'absolute',
             top: 0,
@@ -75,18 +95,42 @@ export default function ObjectDetectionPage() {
         />
       </div>
 
-      <div className="w-full max-w-3xl bg-gray-900 border border-gray-700 rounded p-4">
-        <h2 className="text-xl font-semibold mb-2">Detected Objects</h2>
-        {labels.length > 0 ? (
-          <ul className="list-disc list-inside text-gray-300 space-y-1">
-            {labels.map((label, idx) => (
-              <li key={idx}>{label}</li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-500">No objects detected yet.</p>
-        )}
+      <button
+        onClick={captureSnapshot}
+        className="mb-6 px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white font-semibold"
+      >
+        Capture Snapshot
+      </button>
+
+      <div className="w-full max-w-5xl flex flex-col md:flex-row gap-4 mb-6">
+        {/* Detected Objects */}
+        <div className="flex-1 bg-gray-900 border border-gray-700 rounded p-4">
+          <h2 className="text-xl font-semibold mb-2">Detected Objects</h2>
+          {labels.length > 0 ? (
+            <ul className="list-disc list-inside text-gray-300 space-y-1">
+              {labels.map((label, idx) => (
+                <li key={idx}>{label}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500">No objects detected yet.</p>
+          )}
+        </div>
+
+        {/* Context Description */}
+        <div className="flex-1 bg-gray-900 border border-gray-700 rounded p-4">
+          <h2 className="text-xl font-semibold mb-2">Context Description</h2>
+          <p className="text-gray-300 whitespace-pre-line">{description}</p>
+        </div>
       </div>
+
+      {/* Captured Image */}
+      {capturedImage && (
+        <div className="w-full max-w-3xl bg-gray-800 border border-gray-700 rounded p-4">
+          <h2 className="text-xl font-semibold mb-2">Captured Snapshot</h2>
+          <img src={capturedImage} alt="Captured snapshot" className="rounded w-full" />
+        </div>
+      )}
     </div>
   );
 }
