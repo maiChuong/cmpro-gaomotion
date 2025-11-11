@@ -102,3 +102,4 @@ This will approve the install scripts for both packages, which are:
 core-js: used for polyfills (ES features like Promise, Array.includes, etc.)
 
 sharp: used by Next.js for image optimization (native bindings)
+
