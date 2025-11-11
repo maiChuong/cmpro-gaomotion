@@ -57,7 +57,7 @@ export default function BabylonViewer({ landmarks }: Props) {
       backgroundPlane.isPickable = false;
 
       const bgMaterial = new StandardMaterial('bgMat', scene);
-      bgMaterial.diffuseTexture = new Texture('/texture/terracota.jpg', scene); // replace with your texture
+      bgMaterial.diffuseTexture = new Texture('/texture/platform-o1.png', scene); // replace with your texture
       bgMaterial.specularColor = new Color3(0, 0, 0);
       backgroundPlane.material = bgMaterial;
 
