@@ -24,6 +24,7 @@ export default function WebcamFeed({
 }: Props) {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cameraRef = useRef<any>(null); // store Camera instance for cleanup
 
   useEffect(() => {
     const initFaceMesh = async () => {
@@ -46,7 +47,7 @@ export default function WebcamFeed({
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext('2d');
         const video = webcamRef.current?.video;
-        if (!canvas || !ctx || !video) return;
+        if (!canvas || !ctx || !video || !video.videoWidth || !video.videoHeight) return;
 
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -57,7 +58,6 @@ export default function WebcamFeed({
 
         const points = results.multiFaceLandmarks?.[0];
         if (points?.length) {
-          // Dots
           if (showDots) {
             ctx.fillStyle = '#0d00ff';
             points.forEach((pt) => {
@@ -69,7 +69,6 @@ export default function WebcamFeed({
             });
           }
 
-          // Mesh
           if (showMesh) {
             ctx.strokeStyle = 'rgba(255,255,255,0.3)';
             ctx.lineWidth = 0.5;
@@ -83,25 +82,18 @@ export default function WebcamFeed({
             });
           }
 
-          // Axis markers
           if (showAxis) {
-            const nose = points[1];
-            const leftEye = points[33];
-            const rightEye = points[263];
-
             const drawMarker = (pt: any, color: string) => {
               ctx.fillStyle = color;
               ctx.beginPath();
               ctx.arc(pt.x * canvas.width, pt.y * canvas.height, 3, 0, 2 * Math.PI);
               ctx.fill();
             };
-
-            drawMarker(nose, 'red');
-            drawMarker(leftEye, 'green');
-            drawMarker(rightEye, 'blue');
+            drawMarker(points[1], 'red');     // nose
+            drawMarker(points[33], 'green');  // left eye
+            drawMarker(points[263], 'blue');  // right eye
           }
 
-          // Contours
           if (showContours) {
             ctx.strokeStyle = 'lime';
             ctx.lineWidth = 1.5;
@@ -121,21 +113,39 @@ export default function WebcamFeed({
         ctx.restore();
       });
 
-      const videoElement = webcamRef.current?.video;
-      if (videoElement && onVideoRef) onVideoRef(videoElement);
+      const waitForVideo = () =>
+        new Promise<HTMLVideoElement>((resolve) => {
+          const check = () => {
+            const video = webcamRef.current?.video;
+            if (video && video.readyState >= 2) {
+              resolve(video);
+            } else {
+              requestAnimationFrame(check);
+            }
+          };
+          check();
+        });
 
-      const camera = new Camera(videoElement!, {
+      const videoElement = await waitForVideo();
+      if (onVideoRef) onVideoRef(videoElement);
+
+      const camera = new Camera(videoElement, {
         onFrame: async () => {
-          await faceMesh.send({ image: videoElement! });
+          await faceMesh.send({ image: videoElement });
         },
         width: 640,
         height: 480,
       });
 
       camera.start();
+      cameraRef.current = camera;
     };
 
     initFaceMesh();
+
+    return () => {
+      cameraRef.current?.stop();
+    };
   }, [onLandmarks, onVideoRef, showDots, showMesh, showAxis, showContours]);
 
   return (

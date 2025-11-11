@@ -64,3 +64,5 @@ https://github.com/imerso/facecap/blob/main/modules/webcam.js
 
 
 node scripts/convert-draw-list.js > faceMeshSimplified.ts
+
+tree -I "node_modules|docs|scripts|.git|.next|.vercel" -L 4 | pbcopy 
