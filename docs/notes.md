@@ -66,3 +66,8 @@ https://github.com/imerso/facecap/blob/main/modules/webcam.js
 node scripts/convert-draw-list.js > faceMeshSimplified.ts
 
 tree -I "node_modules|docs|scripts|.git|.next|.vercel" -L 4 | pbcopy 
+
+npm install @tensorflow/tfjs @tensorflow-models/coco-ssd
+Note: multiple categories per instance.
+
+@mediapipe/objectron : one category per instance
