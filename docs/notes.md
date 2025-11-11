@@ -16,6 +16,20 @@ mp4
 https://github.com/imerso/facecap/blob/main/modules/webcam.js
 
 # Plan
+Using PNPM
+Best Practice
+
+If you're switching to pnpm, keep package.json and just delete:
+
+package-lock.json
+
+node_modules
+
+Then run:
+
+bash
+pnpm install
+
 
  tree -L 3 -I 'node_modules|.git|dist' | pbcopy
 .
@@ -71,3 +85,20 @@ npm install @tensorflow/tfjs @tensorflow-models/coco-ssd
 Note: multiple categories per instance.
 
 @mediapipe/objectron : one category per instance
+
+
+chuongmai@192 cmpro-gaomotion % pnpm approve-builds
+? Choose which packages to build (Press <space> to select, <a> to toggle all, <i> to invert selection) … 
+  ○ core-js
+❯ ○ sharp
+
+✅ Select both core-js and sharp
+Press a to toggle all selections
+
+Then press Enter to confirm
+
+This will approve the install scripts for both packages, which are:
+
+core-js: used for polyfills (ES features like Promise, Array.includes, etc.)
+
+sharp: used by Next.js for image optimization (native bindings)
