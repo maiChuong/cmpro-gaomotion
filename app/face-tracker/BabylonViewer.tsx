@@ -71,7 +71,7 @@ export default function BabylonViewer({ landmarks }: Props) {
 
     const groundMaterial = new StandardMaterial('groundMat', scene);
     if (useTexturedGround) {
-      groundMaterial.diffuseTexture = new Texture('/texture/platform-metal.jpg', scene);
+      groundMaterial.diffuseTexture = new Texture('/texture/platform-pro.png', scene);
     } else {
       groundMaterial.diffuseColor = new Color3(0.3, 0.3, 0.3); // solid gray
     }
