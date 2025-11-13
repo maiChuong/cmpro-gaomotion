@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Engine,
   Scene,
@@ -17,16 +17,26 @@ import {
 } from '@babylonjs/core';
 import '@babylonjs/loaders';
 import { FACEMESH_SIMPLIFIED } from './faceMeshSimplified';
+import { generateUVLayoutImage } from './generateUVLayout';
 
 type Props = {
   landmarks: { x: number; y: number; z?: number }[] | null;
 };
+
+const textureOptions = [
+  { label: 'None', value: '' },
+  { label: 'Painted UV 01', value: 'painteduv01.png' },
+  { label: 'Painted UV 02', value: 'painteduv02.png' },
+  { label: 'Painted UV 03', value: 'painteduv03.png' },
+];
 
 export default function BabylonViewer({ landmarks }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<Engine | null>(null);
   const sceneRef = useRef<Scene | null>(null);
   const meshRef = useRef<Mesh | null>(null);
+  const materialRef = useRef<StandardMaterial | null>(null);
+  const [selectedTexture, setSelectedTexture] = useState<string>('');
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -37,15 +47,12 @@ export default function BabylonViewer({ landmarks }: Props) {
     engineRef.current = engine;
     sceneRef.current = scene;
 
-    // Camera
     const camera = new ArcRotateCamera('camera', Math.PI / 2, Math.PI / 2.5, 6, new Vector3(0, 1.5, 0), scene);
     camera.attachControl(canvas, true);
 
-    // Lighting
     const light = new HemisphericLight('light', new Vector3(0, 1, 0), scene);
     light.intensity = 1;
 
-    // Background and ground
     scene.clearColor = new Color3(0.1, 0.4, 0.1).toColor4();
 
     const ground = MeshBuilder.CreateGround('ground', { width: 10, height: 10 }, scene);
@@ -54,7 +61,6 @@ export default function BabylonViewer({ landmarks }: Props) {
     groundMaterial.specularColor = new Color3(0, 0, 0);
     ground.material = groundMaterial;
 
-    // Face mesh
     const mesh = new Mesh('faceMesh', scene);
     meshRef.current = mesh;
 
@@ -62,8 +68,8 @@ export default function BabylonViewer({ landmarks }: Props) {
     material.diffuseColor = new Color3(0.8, 0.6, 0.5);
     material.backFaceCulling = false;
     mesh.material = material;
+    materialRef.current = material;
 
-    // Position mesh above ground
     mesh.position.y = 1.5;
 
     engine.runRenderLoop(() => {
@@ -82,7 +88,7 @@ export default function BabylonViewer({ landmarks }: Props) {
   useEffect(() => {
     if (!landmarks || !meshRef.current) return;
 
-    const scale = 4; // ✅ Triple the original scale (was 2)
+    const scale = 4;
     const positions = landmarks.map((pt) =>
       new Vector3((pt.x - 0.5) * scale, -(pt.y - 0.5) * scale, -(pt.z ?? 0) * scale)
     );
@@ -110,10 +116,71 @@ export default function BabylonViewer({ landmarks }: Props) {
     }
   }, [landmarks]);
 
+  useEffect(() => {
+    if (!selectedTexture || !sceneRef.current || !materialRef.current) {
+      materialRef.current!.diffuseTexture = null;
+      return;
+    }
+
+    const texture = new Texture(`/facepng/${selectedTexture}`, sceneRef.current, false, false);
+    materialRef.current.diffuseTexture = texture;
+  }, [selectedTexture]);
+
+  const downloadUVLayout = () => {
+    if (!landmarks) return;
+
+    const uvLandmarks = landmarks.map((pt) => ({ x: pt.x, y: pt.y }));
+    const dataUrl = generateUVLayoutImage(uvLandmarks);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'uv-layout.png';
+    link.click();
+  };
+
+  const handleTextureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !sceneRef.current || !materialRef.current) return;
+
+    const url = URL.createObjectURL(file);
+    const texture = new Texture(url, sceneRef.current, false, false);
+    materialRef.current.diffuseTexture = texture;
+    setSelectedTexture(''); // Clear dropdown selection
+  };
+
   return (
-    <canvas
-      ref={canvasRef}
-      className="w-full h-full absolute inset-0"
-    />
+    <>
+      <canvas ref={canvasRef} className="w-full h-full absolute inset-0" />
+
+      <div className="absolute top-4 left-4 z-40 flex flex-col gap-2 bg-black/60 p-3 rounded shadow-md">
+        <button
+          onClick={downloadUVLayout}
+          className="px-3 py-2 bg-white text-black rounded text-sm font-medium"
+        >
+          Download UV Layout
+        </button>
+
+        <label className="px-3 py-2 bg-white text-black rounded text-sm font-medium cursor-pointer">
+          Upload Painted UV
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleTextureUpload}
+            className="hidden"
+          />
+        </label>
+
+        <select
+          value={selectedTexture}
+          onChange={(e) => setSelectedTexture(e.target.value)}
+          className="px-2 py-1 rounded text-sm bg-white text-black"
+        >
+          {textureOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </>
   );
 }
