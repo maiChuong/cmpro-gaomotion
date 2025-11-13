@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Script from 'next/script';
 import Webcam from 'react-webcam';
 
 export default function ObjectDetectionMobilePage() {
@@ -10,6 +11,7 @@ export default function ObjectDetectionMobilePage() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [description, setDescription] = useState<string>('No snapshot captured yet.');
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [puterReady, setPuterReady] = useState(false);
 
   useEffect(() => {
     const loadModel = async () => {
@@ -55,7 +57,10 @@ export default function ObjectDetectionMobilePage() {
 
   const captureSnapshot = async () => {
     const canvas = canvasRef.current;
-    if (!canvas || labels.length === 0) return;
+    if (!canvas || labels.length === 0 || !puterReady || !window.puter?.ai?.chat) {
+      setDescription('Puter AI not ready or no objects detected.');
+      return;
+    }
 
     const imageData = canvas.toDataURL('image/jpeg');
     setCapturedImage(imageData);
@@ -66,9 +71,7 @@ export default function ObjectDetectionMobilePage() {
         new Set(labels)
       ).join(', ')}, describe the likely context in a natural, human-readable paragraph.`;
 
-      // @ts-ignore
       const result = await window.puter.ai.chat(prompt, { model: 'gpt-4o' });
-
       setDescription(result || 'No description returned.');
     } catch (err) {
       setDescription('Failed to interpret scene.');
@@ -82,9 +85,16 @@ export default function ObjectDetectionMobilePage() {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-start px-4 py-6">
+      <Script
+        src="https://js.puter.com/v2/"
+        strategy="afterInteractive"
+        onLoad={() => setPuterReady(true)}
+      />
+
       <h1 className="text-2xl font-bold mb-4 text-center">Object Detection (Mobile)</h1>
 
-      <div className="relative w-full max-w-md aspect-video mb-4">
+      <div className="relative w-full max-w-md mb-4 
+                      h-[60vh] sm:h-[70vh] md:h-[75vh] lg:aspect-video">
         <Webcam
           ref={webcamRef}
           audio={false}
@@ -98,6 +108,7 @@ export default function ObjectDetectionMobilePage() {
           className="absolute top-0 left-0 w-full h-full border border-gray-700 rounded"
         />
       </div>
+
 
       <div className="flex gap-4 mb-6 w-full max-w-md">
         <button
