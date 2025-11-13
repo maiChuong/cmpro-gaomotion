@@ -38,6 +38,7 @@ export default function BabylonViewer({ landmarks }: Props) {
   const meshRef = useRef<Mesh | null>(null);
   const materialRef = useRef<StandardMaterial | null>(null);
   const [selectedTexture, setSelectedTexture] = useState<string>('');
+  const [showTools, setShowTools] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -162,42 +163,53 @@ export default function BabylonViewer({ landmarks }: Props) {
     <>
       <canvas ref={canvasRef} className="w-full h-full absolute inset-0" />
 
-      <div className="absolute top-4 left-4 z-40 flex flex-col gap-2 bg-black/60 p-3 rounded shadow-md">
+      <div className="absolute top-4 left-4 z-40 flex flex-col gap-2">
         <button
-          onClick={downloadLiveUVLayout}
-          className="px-3 py-2 bg-white text-black rounded text-sm font-medium"
+          onClick={() => setShowTools((prev) => !prev)}
+          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-semibold shadow"
         >
-          Download Live UV Layout
+          {showTools ? 'Hide UV Tools' : 'Show UV Tools'}
         </button>
 
-        <button
-          onClick={downloadNeutralUVLayout}
-          className="px-3 py-2 bg-white text-black rounded text-sm font-medium"
-        >
-          Download Neutral UV Layout
-        </button>
+        {showTools && (
+          <div className="mt-2 bg-black/70 p-3 rounded shadow-md flex flex-col gap-2">
+            <button
+              onClick={downloadLiveUVLayout}
+              className="px-3 py-2 bg-white text-black rounded text-sm font-medium"
+            >
+              Download Live UV Layout
+            </button>
 
-        <label className="px-3 py-2 bg-white text-black rounded text-sm font-medium cursor-pointer">
-          Upload Painted UV
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleTextureUpload}
-            className="hidden"
-          />
-        </label>
+            <button
+              onClick={downloadNeutralUVLayout}
+              className="px-3 py-2 bg-white text-black rounded text-sm font-medium"
+            >
+              Download Neutral UV Layout
+            </button>
 
-        <select
-          value={selectedTexture}
-          onChange={(e) => setSelectedTexture(e.target.value)}
-          className="px-2 py-1 rounded text-sm bg-white text-black"
-        >
-          {textureOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+            <label className="px-3 py-2 bg-white text-black rounded text-sm font-medium cursor-pointer">
+              Upload Painted UV
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleTextureUpload}
+                className="hidden"
+              />
+            </label>
+
+            <select
+              value={selectedTexture}
+              onChange={(e) => setSelectedTexture(e.target.value)}
+              className="px-2 py-1 rounded text-sm bg-white text-black"
+            >
+              {textureOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
     </>
   );

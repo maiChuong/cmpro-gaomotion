@@ -8,11 +8,9 @@ export function generateUVLayoutImage(
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d');
-  if (!ctx) return '';
+  if (!ctx || landmarks.length === 0 || triangles.length === 0) return '';
 
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, size, size);
-
+  // Step 1: Compute bounding box of UVs
   const xs = landmarks.map((pt) => pt.x);
   const ys = landmarks.map((pt) => pt.y);
   const minX = Math.min(...xs);
@@ -22,17 +20,27 @@ export function generateUVLayoutImage(
 
   const uvWidth = maxX - minX;
   const uvHeight = maxY - minY;
-  const scale = Math.min(
-    (size - 2 * padding) / uvWidth,
-    (size - 2 * padding) / uvHeight
-  );
 
+  // Step 2: Compute scale and offset
+  const availableWidth = size - 2 * padding;
+  const availableHeight = size - 2 * padding;
+  const scale = Math.min(availableWidth / uvWidth, availableHeight / uvHeight);
+
+  const offsetX = padding - minX * scale;
+  const offsetY = padding - minY * scale;
+
+  // Step 3: Transform UVs to canvas space
   const transform = (pt: { x: number; y: number }) => {
-    const x = (pt.x - minX) * scale + padding;
-    const y = (1 - (pt.y - minY) / uvHeight) * scale + padding;
+    const x = pt.x * scale + offsetX;
+    const y = size - (pt.y * scale + offsetY); // Flip Y for canvas
     return { x, y };
   };
 
+  // Step 4: Draw background
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, size, size);
+
+  // Step 5: Draw triangles
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 1;
 
