@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Script from 'next/script';
 import Webcam from 'react-webcam';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import '@tensorflow/tfjs';
@@ -12,6 +13,7 @@ export default function ObjectDetectionPage() {
   const [labels, setLabels] = useState<string[]>([]);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [description, setDescription] = useState<string>('No snapshot captured yet.');
+  const [puterReady, setPuterReady] = useState(false);
 
   useEffect(() => {
     const loadModel = async () => {
@@ -57,7 +59,10 @@ export default function ObjectDetectionPage() {
 
   const captureSnapshot = async () => {
     const canvas = canvasRef.current;
-    if (!canvas || labels.length === 0) return;
+    if (!canvas || labels.length === 0 || !puterReady || !window.puter?.ai?.chat) {
+      setDescription('Puter AI not ready or no objects detected.');
+      return;
+    }
 
     const imageData = canvas.toDataURL('image/jpeg');
     setCapturedImage(imageData);
@@ -68,9 +73,7 @@ export default function ObjectDetectionPage() {
         new Set(labels)
       ).join(', ')}, describe the likely context in a natural, human-readable paragraph.`;
 
-      // @ts-ignore
       const result = await window.puter.ai.chat(prompt, { model: 'gpt-4o' });
-
       setDescription(result || 'No description returned.');
     } catch (err) {
       setDescription('Failed to interpret scene.');
@@ -80,6 +83,12 @@ export default function ObjectDetectionPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center px-4 py-8">
+      <Script
+        src="https://js.puter.com/v2/"
+        strategy="afterInteractive"
+        onLoad={() => setPuterReady(true)}
+      />
+
       <h1 className="text-3xl font-bold mb-6">Object Detection (Snapshot + AI Description)</h1>
 
       <div className="relative w-full max-w-3xl aspect-video mb-4">
@@ -110,7 +119,6 @@ export default function ObjectDetectionPage() {
       </button>
 
       <div className="w-full max-w-5xl flex flex-col md:flex-row gap-4 mb-6">
-        {/* Detected Objects */}
         <div className="flex-1 bg-gray-900 border border-gray-700 rounded p-4">
           <h2 className="text-xl font-semibold mb-2">Detected Objects</h2>
           {labels.length > 0 ? (
@@ -124,14 +132,12 @@ export default function ObjectDetectionPage() {
           )}
         </div>
 
-        {/* Context Description */}
         <div className="flex-1 bg-gray-900 border border-gray-700 rounded p-4">
           <h2 className="text-xl font-semibold mb-2">Context Description</h2>
           <p className="text-gray-300 whitespace-pre-line">{description}</p>
         </div>
       </div>
 
-      {/* Captured Image */}
       {capturedImage && (
         <div className="w-full max-w-3xl bg-gray-800 border border-gray-700 rounded p-4">
           <h2 className="text-xl font-semibold mb-2">Captured Snapshot</h2>
