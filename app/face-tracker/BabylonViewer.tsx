@@ -17,6 +17,7 @@ import {
 } from '@babylonjs/core';
 import '@babylonjs/loaders';
 import { FACEMESH_SIMPLIFIED } from './faceMeshSimplified';
+import { NEUTRAL_FACE_MESH } from './neutralFaceMesh';
 import { generateUVLayoutImage } from './generateUVLayout';
 
 type Props = {
@@ -117,8 +118,10 @@ export default function BabylonViewer({ landmarks }: Props) {
   }, [landmarks]);
 
   useEffect(() => {
-    if (!selectedTexture || !sceneRef.current || !materialRef.current) {
-      materialRef.current!.diffuseTexture = null;
+    if (!sceneRef.current || !materialRef.current) return;
+
+    if (!selectedTexture) {
+      materialRef.current.diffuseTexture = null;
       return;
     }
 
@@ -126,14 +129,22 @@ export default function BabylonViewer({ landmarks }: Props) {
     materialRef.current.diffuseTexture = texture;
   }, [selectedTexture]);
 
-  const downloadUVLayout = () => {
+  const downloadLiveUVLayout = () => {
     if (!landmarks) return;
 
     const uvLandmarks = landmarks.map((pt) => ({ x: pt.x, y: pt.y }));
     const dataUrl = generateUVLayoutImage(uvLandmarks);
     const link = document.createElement('a');
     link.href = dataUrl;
-    link.download = 'uv-layout.png';
+    link.download = 'live-uv-layout.png';
+    link.click();
+  };
+
+  const downloadNeutralUVLayout = () => {
+    const dataUrl = generateUVLayoutImage(NEUTRAL_FACE_MESH);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'neutral-uv-layout.png';
     link.click();
   };
 
@@ -144,7 +155,7 @@ export default function BabylonViewer({ landmarks }: Props) {
     const url = URL.createObjectURL(file);
     const texture = new Texture(url, sceneRef.current, false, false);
     materialRef.current.diffuseTexture = texture;
-    setSelectedTexture(''); // Clear dropdown selection
+    setSelectedTexture('');
   };
 
   return (
@@ -153,10 +164,17 @@ export default function BabylonViewer({ landmarks }: Props) {
 
       <div className="absolute top-4 left-4 z-40 flex flex-col gap-2 bg-black/60 p-3 rounded shadow-md">
         <button
-          onClick={downloadUVLayout}
+          onClick={downloadLiveUVLayout}
           className="px-3 py-2 bg-white text-black rounded text-sm font-medium"
         >
-          Download UV Layout
+          Download Live UV Layout
+        </button>
+
+        <button
+          onClick={downloadNeutralUVLayout}
+          className="px-3 py-2 bg-white text-black rounded text-sm font-medium"
+        >
+          Download Neutral UV Layout
         </button>
 
         <label className="px-3 py-2 bg-white text-black rounded text-sm font-medium cursor-pointer">
