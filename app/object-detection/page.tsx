@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Script from 'next/script';
 import Webcam from 'react-webcam';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import '@tensorflow/tfjs';
@@ -11,9 +10,8 @@ export default function ObjectDetectionPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [model, setModel] = useState<cocoSsd.ObjectDetection | null>(null);
   const [labels, setLabels] = useState<string[]>([]);
-  const [description, setDescription] = useState<string>('No interpretation yet.');
-  const [capturedCanvas, setCapturedCanvas] = useState<string | null>(null);
-  const [puterReady, setPuterReady] = useState<boolean>(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [description, setDescription] = useState<string>('No snapshot captured yet.');
 
   useEffect(() => {
     const loadModel = async () => {
@@ -57,24 +55,23 @@ export default function ObjectDetectionPage() {
     return () => clearInterval(interval);
   }, [model]);
 
-  const interpretScene = async () => {
-    if (!puterReady || labels.length === 0 || !canvasRef.current) {
-      setDescription('Waiting for Puter AI or no objects detected.');
-      return;
-    }
-
+  const captureSnapshot = async () => {
     const canvas = canvasRef.current;
+    if (!canvas || labels.length === 0) return;
+
     const imageData = canvas.toDataURL('image/jpeg');
-    setCapturedCanvas(imageData);
-
-    const uniqueLabels = Array.from(new Set(labels));
-    const prompt = `Given the following detected objects: ${uniqueLabels.join(', ')}, describe the likely scene or context in natural language.`;
-
+    setCapturedImage(imageData);
     setDescription('Interpreting scene...');
 
     try {
-      const result = await window.puter.ai.completeText(prompt);
-      setDescription(result.text || 'No description returned.');
+      const prompt = `You are a visual scene interpreter. Based on these detected objects: ${Array.from(
+        new Set(labels)
+      ).join(', ')}, describe the likely context in a natural, human-readable paragraph.`;
+
+      // @ts-ignore
+      const result = await window.puter.ai.chat(prompt, { model: 'gpt-4o' });
+
+      setDescription(result || 'No description returned.');
     } catch (err) {
       setDescription('Failed to interpret scene.');
       console.error(err);
@@ -83,23 +80,12 @@ export default function ObjectDetectionPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center px-4 py-8">
-      <Script
-        src="https://js.puter.com/v2/"
-        strategy="afterInteractive"
-        onLoad={() => setPuterReady(true)}
-      />
-
-      <h1 className="text-3xl font-bold mb-6">Object Detection + Scene Interpretation</h1>
-
-      {!puterReady && (
-        <div className="mb-4 text-yellow-400 text-center">
-          Please allow Puter AI to load. This enables scene interpretation.
-        </div>
-      )}
+      <h1 className="text-3xl font-bold mb-6">Object Detection (Snapshot + AI Description)</h1>
 
       <div className="relative w-full max-w-3xl aspect-video mb-4">
         <Webcam
           ref={webcamRef}
+          audio={false}
           screenshotFormat="image/jpeg"
           style={{
             position: 'absolute',
@@ -117,10 +103,10 @@ export default function ObjectDetectionPage() {
       </div>
 
       <button
-        onClick={interpretScene}
+        onClick={captureSnapshot}
         className="mb-6 px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white font-semibold"
       >
-        Interpret Scene
+        Capture Snapshot
       </button>
 
       <div className="w-full max-w-5xl flex flex-col md:flex-row gap-4 mb-6">
@@ -145,11 +131,11 @@ export default function ObjectDetectionPage() {
         </div>
       </div>
 
-      {/* Captured Canvas Preview */}
-      {capturedCanvas && (
+      {/* Captured Image */}
+      {capturedImage && (
         <div className="w-full max-w-3xl bg-gray-800 border border-gray-700 rounded p-4">
-          <h2 className="text-xl font-semibold mb-2">Captured Scene</h2>
-          <img src={capturedCanvas} alt="Captured canvas" className="rounded w-full" />
+          <h2 className="text-xl font-semibold mb-2">Captured Snapshot</h2>
+          <img src={capturedImage} alt="Captured snapshot" className="rounded w-full" />
         </div>
       )}
     </div>
