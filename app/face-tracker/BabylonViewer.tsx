@@ -100,7 +100,7 @@ export default function BabylonViewer({ landmarks }: Props) {
     const normals: number[] = [];
     VertexData.ComputeNormals(flatPositions, indices, normals);
 
-    const uvs = positions.map((v) => [v.x * 0.5 + 0.5, -v.y * 0.5 + 0.5]).flat();
+    const uvs = landmarks.map((pt) => [pt.x, pt.y]).flat();
 
     const mesh = meshRef.current;
     if (!mesh.geometry) {
@@ -133,7 +133,7 @@ export default function BabylonViewer({ landmarks }: Props) {
     if (!landmarks) return;
 
     const uvLandmarks = landmarks.map((pt) => ({ x: pt.x, y: pt.y }));
-    const dataUrl = generateUVLayoutImage(uvLandmarks);
+    const dataUrl = generateUVLayoutImage(uvLandmarks, FACEMESH_SIMPLIFIED);
     const link = document.createElement('a');
     link.href = dataUrl;
     link.download = 'live-uv-layout.png';
@@ -141,7 +141,7 @@ export default function BabylonViewer({ landmarks }: Props) {
   };
 
   const downloadNeutralUVLayout = () => {
-    const dataUrl = generateUVLayoutImage(NEUTRAL_FACE_MESH);
+    const dataUrl = generateUVLayoutImage(NEUTRAL_FACE_MESH, FACEMESH_SIMPLIFIED);
     const link = document.createElement('a');
     link.href = dataUrl;
     link.download = 'neutral-uv-layout.png';
